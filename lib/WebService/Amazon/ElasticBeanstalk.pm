@@ -13,7 +13,7 @@ use HTTP::Request::Common;
 use LWP;
 use Params::Validate qw( :all );
 use Readonly;
-use Smart::Comments;
+use Smart::Comments '###';
 #use Smart::Comments '###', '####';
 #use Smart::Comments '###', '####', '#####';
 require XML::Simple;
@@ -99,27 +99,28 @@ B<secret> in the param hash:
 
 =item id B<(required)>
 
-You can find within your Smartling project's dashboard: 
-L<https://dashboard.smartling.com/settings/api>
+You can find more information in the AWS docs: 
+L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/CommonParameters.html>
 
 =item region I<(optional)> - defaults to us-east-1
 
-You can find vailable regions at: 
+You can find available regions at: 
 L<http://docs.aws.amazon.com/general/latest/gr/rande.html#elasticbeanstalk_region>
 
 =item secret B<(required)>
 
-You can find within your Smartling project's dashboard: 
-L<https://dashboard.smartling.com/settings/api>
+You can find more information in the AWS docs: 
+L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/CommonParameters.html>
 
 =back
 
 =cut
 
-my( %ALL_SPECS ) = (
-  id     => { type => SCALAR, regex => qr/$REGEX_ID/, },
-  region => { type => SCALAR, regex => qr/$REGEX_REGION/, },
-  secret => { type => SCALAR, regex => qr/$REGEX_SECRET/, },
+my( %ALL_PATS ) = (
+  id          => { type => SCALAR, regex => qr/$REGEX_ID/, },
+  region      => { type => SCALAR, regex => qr/$REGEX_REGION/, optional => 1, default => 'us-east-1', },
+  secret      => { type => SCALAR, regex => qr/$REGEX_SECRET/, },
+
 );
 #   apiKey             => { type => SCALAR, regex => qr/$REGEX_APIKEY/, },
 #   approved           => { type => SCALAR, },
@@ -147,44 +148,52 @@ my( %ALL_SPECS ) = (
 # );
 
 my( %global_spec ) = ( 
-  id     => $ALL_SPECS{id},
-  region => $ALL_SPECS{region},
-  secret => $ALL_SPECS{secret},
+  id     => $ALL_PATS{id},
+  region => $ALL_PATS{region},
+  secret => $ALL_PATS{secret},
 );
 
-# Override valida options, set API version and create XML parser
+# #################################################################################################
+# 
+# Override WebService::Simple methods
+#
+
+# Override valid options, set API version and create XML parser
 sub new {
+  ### Enter: (caller(0))[3]
   my( $class, %args ) = @_;
   my $self = $class->SUPER::new(%args);
   
   # set our API version
   $self->{api_version} = $API_VERSION;
   
-  # this is silly, but easier for validation
-  my( @temp_params ) = %{ $self->{basic_params} };
-  my %params = validate( @temp_params, \%global_spec );
-  
-  # change the endpoint for the requested region
-  if ( $params{region} and "$params{region}" ne "us-east-1" ) {
-    carp( "Region specified. Switching to correct region endpoint..." );
-    $self->{base_url} = $REGIONS{$params{region}};
-  }
-  
   # for parsing the responses
   $self->{xs} = XML::Simple->new();
   
+  # this is silly, but easier for validation
+  my( @temp_params ) = %{ $self->{basic_params} };
+  my %params = validate( @temp_params, \%global_spec );
+  ##### %params
+  
+  # change the endpoint for the requested region
+  if ( $params{region} ) {
+    $self->{base_url} = $REGIONS{$params{region}};
+  }
+  ### Exit: (caller(0))[3]
   return bless($self, $class);
 }
 
 # override parent get to perform the required AWS signatures
 sub get {
-  my( $self, %args ) = @_;
+  ### Enter: (caller(0))[3]
+  my( $self ) = shift;
+  my( %args ) = @_;
   #my $self = $class->SUPER::new(%args);
   
   ##### $self
   my $signer = AWS::Signature4->new( -access_key => $self->{basic_params}{id},
                                      -secret_key => $self->{basic_params}{secret} );
-                                    
+
   my $ua = LWP::UserAgent->new();
 
   ### %args
@@ -201,28 +210,29 @@ sub get {
   #### $uri
 
   my $url = $signer->signed_url($uri); # This gives a signed URL that can be fetched by a browser
-  ### $url
+  #### $url
   # This doesn't quite work (it wants path and args onyl)
   #my $response = $self->SUPER::get( $url ); 
   my $response = $ua->get($url);
-  ### $response
-  if ($response->is_success) {
-     return $self->{xs}->XMLin( $response->decoded_content );
+  ##### $response
+  if ( $response->is_success ) {
+    ### Exit: (caller(0))[3]
+    return $self->{xs}->XMLin( $response->decoded_content );
   }
   else {
     carp( $response->status_line );
+    ### Exit: (caller(0))[3]
     return undef;
   }
-  #return bless($self, $class);
+  ### Exit: (caller(0))[3]
 }
 
 # override parent post to perform the required AWS signatures
 sub post {
-  my( $class, %args ) = @_;
-  my $self = $class->SUPER::new(%args);
+  my( $self, %args ) = @_;
   
-  my $signer = AWS::Signature4->new(-access_key => $self->{basic_params}{id},
-                                    -secret_key => $self->{basic_params}{secret});
+  my $signer = AWS::Signature4->new( -access_key => $self->{basic_params}{id},
+                                     -secret_key => $self->{basic_params}{secret});
                                     
   my $ua     = LWP::UserAgent->new();
 
@@ -232,12 +242,59 @@ sub post {
                       Version=>'2010-05-08']);
   $signer->sign($request);
   my $response = $ua->request($request);
-  
-  return bless($self, $class);
+  ##### $response
+  if ( $response->is_success ) {
+     return $self->{xs}->XMLin( $response->decoded_content );
+  }
+  else {
+    carp( $response->status_line );
+    return undef;
+  }
 }
 
+# #################################################################################################
+# 
+# API Methods Below
+#
 
-# CheckDNSAvailability
+## CheckDNSAvailability
+
+=head2 CheckDNSAvailability( )
+
+Returns a list of the available solution stack names.
+
+Refer to L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_CheckDNSAvailability.html>
+
+=over 4
+
+=item B<Parameters>
+
+=item CNAMEPrefix B<(required scalar)>
+
+The prefix used when this CNAME is reserved.
+
+=item B<Returns: XML result from API>
+
+=back
+
+=cut
+
+Readonly my %dns_spec => ( CNAMEPrefix => { type => SCALAR, regex => qr/^[A-Z0-9_-]{4,63}$/i, } );
+
+sub CheckDNSAvailability {
+  ### Enter: (caller(0))[3]
+  my( $self ) = shift;
+  my %params  = validate( @_, \%dns_spec );
+    
+  $params{Operation} = 'CheckDNSAvailability';
+  
+  ### %params
+  
+  my( $rez ) = $self->get( params => \%params );
+  ### Exit: (caller(0))[3]
+  return $rez->{'CheckDNSAvailabilityResult'};
+}
+
 # CreateApplication
 # CreateApplicationVersion
 # CreateConfigurationTemplate
@@ -247,14 +304,140 @@ sub post {
 # DeleteApplicationVersion
 # DeleteConfigurationTemplate
 # DeleteEnvironmentConfiguration
-# DescribeApplicationVersions
+
+## DescribeApplicationVersions
+
+=head2 DescribeApplicationVersions( )
+
+Returns a list of the available solution stack names.
+
+Refer to L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_DescribeApplicationVersions.html>
+
+=over 4
+
+=item B<Parameters>
+
+=item ApplicationName I<(optional scalar)>
+
+If specified, AWS Elastic Beanstalk restricts the returned descriptions to only include ones that are associated with the specified application.
+
+=item VersionLabels I<(optional array)>
+
+If specified, AWS Elastic Beanstalk restricts the returned versions to only include those with the specified names.
+
+=item B<Returns: XML result from API>
+
+=back
+
+=cut
+
+Readonly my %dav_spec => ( ApplicationName => { type => SCALAR,   regex    => qr/^[A-Z0-9_-]{4,63}$/i, },
+                           VersionLabels   => { type => ARRAYREF, optional => 1 },
+                          );
+
+sub DescribeApplicationVersions {
+  ### Enter: (caller(0))[3]
+  my( $self )        = shift;
+  my %params         = validate( @_, \%dav_spec );
+  $params{Operation} = 'DescribeApplicationVersions';
+  ### %params
+  
+  if ( exists( $params{'VersionLabels'} ) ) {
+    my( $i ) = 1;
+    foreach my $app ( @{ $params{'VersionLabels'} } ) {
+      $params{"VersionLabels.member.${i}"} = $app;     
+      $i++; 
+    }
+    delete( $params{VersionLabels} );
+  }
+  
+  ### %params
+  my( $rez ) = $self->get( params => \%params );
+  ### Exit: (caller(0))[3]
+  return $rez->{'DescribeApplicationVersionsResult'};
+}
+
 # DescribeApplications
+
+=head2 DescribeApplications( )
+
+Returns a list of the available solution stack names.
+
+Refer to L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_DescribeApplications.html>
+
+=over 4
+
+=item B<Parameters>
+
+=item ApplicationNames I<(optional array)>
+
+If specified, AWS Elastic Beanstalk restricts the returned descriptions to only include those with the specified names.
+
+=item B<Returns: XML result from API>
+
+=back
+
+=cut
+
+Readonly my %da_spec => ( ApplicationNames => { type => ARRAYREF, optional => 1 } );
+                          
+sub DescribeApplications {
+  ### Enter: (caller(0))[3]
+  my( $self )        = shift;
+  my %params         = validate( @_, \%da_spec );
+  $params{Operation} = 'DescribeApplications';
+  ### %params
+  
+  if ( exists( $params{'ApplicationNames'} ) ) {
+    my( $i ) = 1;
+    foreach my $app ( @{ $params{'ApplicationNames'} } ) {
+      $params{"ApplicationNames.member.${i}"} = $app;  
+      $i++;    
+    }
+    delete( $params{'ApplicationNames'} );
+  }
+  
+  ### %params
+  my( $rez ) = $self->get( params => \%params );
+  ### Exit: (caller(0))[3]
+  return $rez->{'DescribeApplicationsResult'};
+}
+
+
 # DescribeConfigurationOptions
 # DescribeConfigurationSettings
 # DescribeEnvironmentResources
 # DescribeEnvironments
 # DescribeEvents
 ## ListAvailableSolutionStacks
+
+=head2 ListAvailableSolutionStacks( )
+
+Returns a list of the available solution stack names.
+
+Refer to L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_ListAvailableSolutionStacks.html>
+
+=over 4
+
+=item B<Parameters>
+
+B<none>
+
+=item B<Returns: XML result from API>
+
+=back
+
+=cut
+
+sub ListAvailableSolutionStacks {
+  ### Enter: (caller(0))[3]
+  my( $self ) = shift;
+
+  my( $rez ) = $self->get( params => { Operation => 'ListAvailableSolutionStacks' } );
+  ### Exit: (caller(0))[3]
+  return $rez->{'ListAvailableSolutionStacksResult'};
+}
+
 # RebuildEnvironment
 # RequestEnvironmentInfo
 # RestartAppServer
@@ -282,7 +465,7 @@ L<https://docs.smartling.com/display/docs/Files+API#FilesAPI-/file/delete%28DELE
 
 =cut
 
-my( %file_delete_spec ) = ( fileUri => $ALL_SPECS{fileUri} );
+#my( %file_delete_spec ) = ( fileUri => $ALL_SPECS{fileUri} );
 
 =over 4
 
@@ -334,54 +517,6 @@ Value that uniquely identifies the file.
 #
 #   return $response->parse_response;
 # }
-
-=head2 ListAvailableSolutionStacks( )
-
-Returns a list of the available solution stack names.
-
-Refer to L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_ListAvailableSolutionStacks.html>
-
-=over 4
-
-=item B<Parameters>
-
-B<none>
-
-=item B<Returns: JSON result from API>
-
-=over 4
-
- {
-   "locales": [
-       {
-           "name": "Spanish",
-           "locale": "es",
-           "translated": "Español"
-       },
-       {
-           "name": "French",
-           "locale": "fr-FR",
-           "translated": "Français"
-       }
-   ]
- }
-
- locale - Locale identifier
-
- name - Source locale name
-
- translated - Localized locale name
-
-=back
-
-=back
-
-=cut
-
-sub ListAvailableSolutionStacks {
-  my $self = shift;
-  return $self->get( params => { Operation => 'ListAvailableSolutionStacks' } );
-}
 
 =head1 AUTHOR
 
