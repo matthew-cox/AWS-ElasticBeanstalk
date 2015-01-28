@@ -256,7 +256,6 @@ sub post {
 sub _handleRepeatedOptions {
   ### Enter: (caller(0))[3]
   my( $self ) = shift;
-  return undef;
   my( $repeat, %params ) = @_;
   #### %params
 
@@ -299,6 +298,11 @@ sub _genericCallHandler {
   return $rez->{"${op}Result"};
 }
 
+sub one_of {
+  my @options = @_;
+  _bless_right_class(_mk_autodoc(sub { _count_of(\@options, 1)->(@_) }));
+}
+
 # #################################################################################################
 # 
 # API Methods Below
@@ -330,9 +334,9 @@ $API_SPEC{'CheckDNSAvailability'} = { CNAMEPrefix => { type => SCALAR, regex => 
 
 sub CheckDNSAvailability {
   ### Enter: (caller(0))[3]
-  my( $self ) = shift;
+  my( $rez ) = _genericCallHandler( @_ );
   ### Exit: (caller(0))[3]
-  return $self->_genericCallHandler( @_ );
+  return $rez;
 }
 
 # CreateApplication
@@ -377,9 +381,9 @@ $API_SPEC{'DescribeApplicationVersions'} = { ApplicationName => { type => SCALAR
 
 sub DescribeApplicationVersions {
   ### Enter: (caller(0))[3]
-  my( $self ) = shift;
+  my( $rez ) = _genericCallHandler( @_ );
   ### Exit: (caller(0))[3]
-  return $self->_genericCallHandler( @_ );
+  return $rez;
 }
 
 # DescribeApplications
@@ -408,20 +412,9 @@ $API_SPEC{'DescribeApplications'} = { ApplicationNames => { type => ARRAYREF, op
                           
 sub DescribeApplications {
   ### Enter: (caller(0))[3]
-  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
-  ### Operation = $op
-  my( $self )        = shift;
-  my %params         = validate( @_, $API_SPEC{$op} );
-  $params{Operation} = $op;
-  ### %params
-  
-  # handle ARRAY / repeated options
-  ( %params ) = $self->_handleRepeatedOptions( 'ApplicationNames', %params );
-  
-  ### %params
-  my( $rez ) = $self->get( params => \%params );
+  my( $rez ) = _genericCallHandler( @_ );
   ### Exit: (caller(0))[3]
-  return $rez->{"${op}Result"};
+  return $rez;
 }
 
 
@@ -463,29 +456,18 @@ The name of the configuration template whose configuration options you want to d
 
 =cut
 
-Readonly my %dco_spec => ( ApplicationName   => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i, optional => 1 },
-                           EnvironmentName   => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{4,23}$/i,  optional => 1 },
-                           Options           => { type => ARRAYREF, optional => 1 },
-                           SolutionStackName => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i, optional => 1 },
-                           TemplateName      => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i, optional => 1 },
-                          );
+$API_SPEC{'DescribeConfigurationOptions'} = { ApplicationName   => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i, optional => 1 },
+                                              EnvironmentName   => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{4,23}$/i,  optional => 1 },
+                                              Options           => { type => ARRAYREF, optional => 1 },
+                                              SolutionStackName => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i, optional => 1 },
+                                              TemplateName      => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i, optional => 1 },
+                                            };
                           
 sub DescribeConfigurationOptions {
   ### Enter: (caller(0))[3]
-  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
-  ### Operation = $op
-  my( $self )        = shift;
-  my %params         = validate( @_, \%dco_spec );
-  $params{Operation} = $op;
-  ### %params
-  
-  # handle ARRAY / repeated options
-  ( %params ) = $self->_handleRepeatedOptions( 'Options', %params );
-  
-  ### %params
-  my( $rez ) = $self->get( params => \%params );
+  my( $rez ) = _genericCallHandler( @_ );
   ### Exit: (caller(0))[3]
-  return $rez->{"${op}Result"};
+  return $rez;
 }
 
 # DescribeConfigurationSettings
@@ -522,31 +504,32 @@ Conditional: You must specify either this parameter or an EnvironmentName, but n
 
 =cut
 
-Readonly my %dcs_spec => ( ApplicationName => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i, },
-                           EnvironmentName => { type => ARRAYREF, regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
-                           TemplateName    => { type => ARRAYREF, regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
-                          );
-                          
+$API_SPEC{'DescribeConfigurationSettings'} = { ApplicationName => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i,
+                                                                    callbacks => {
+                                                                      'other_params' => sub { 
+                                                                        my( $me, $others ) = @_;
+                                                                        if ( !exists( $others->{'EnvironmentName'} ) && !exists( $others->{'TemplateName'} ) ) {
+                                                                          croak( "Provide one of EnvironmentName or TemplateName" );
+                                                                          return 0;
+                                                                        }
+  
+                                                                        if ( exists( $others->{'EnvironmentName'} ) && exists( $others->{'TemplateName'} ) ) {
+                                                                          croak( "Provide only one of EnvironmentName or TemplateName" );
+                                                                          return 0;
+                                                                        }
+                                                                        return 1;
+                                                                      }
+                                                                    }
+                                                                  },
+                                               EnvironmentName => { type => SCALAR, regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
+                                               TemplateName    => { type => SCALAR, regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
+                                             };
+
 sub DescribeConfigurationSettings {
   ### Enter: (caller(0))[3]
-  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
-  ### Operation = $op
-  my( $self )        = shift;
-  my %params         = validate( @_, \%dcs_spec );
-  $params{Operation} = $op;
-  
-  if ( !exists( $params{'EnvironmentName'} ) && !exists( $params{'TemplateName'} ) ) {
-    croak( "Provide one of EnvironmentName or TemplateName" );
-  }
-  
-  if ( exists( $params{'EnvironmentName'} ) && exists( $params{'TemplateName'} ) ) {
-    croak( "Provide only one of EnvironmentName or TemplateName" );
-  }
-  
-  ### %params
-  my( $rez ) = $self->get( params => \%params );
+  my( $rez ) = _genericCallHandler( @_ );
   ### Exit: (caller(0))[3]
-  return $rez->{"${op}Result"};
+  return $rez;
 }
 
 # #################################################################################################
@@ -573,24 +556,13 @@ If specified, AWS Elastic Beanstalk restricts the returned descriptions to only 
 
 =cut
 
-Readonly my %der_spec => ( ApplicationNames => { type => ARRAYREF, optional => 1 } );
+$API_SPEC{'DescribeEnvironmentResources'} = { ApplicationNames => { type => ARRAYREF, optional => 1 } };
                           
 sub DescribeEnvironmentResources {
   ### Enter: (caller(0))[3]
-  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
-  ### Operation = $op
-  my( $self )        = shift;
-  my %params         = validate( @_, \%der_spec );
-  $params{Operation} = $op;
-  ### %params
-  
-  # handle ARRAY / repeated options
-  ( %params ) = $self->_handleRepeatedOptions( 'ApplicationNames', %params );
-  
-  ### %params
-  my( $rez ) = $self->get( params => \%params );
+  my( $rez ) = _genericCallHandler( @_ );
   ### Exit: (caller(0))[3]
-  return $rez->{"${op}Result"};
+  return $rez;
 }
 
 # #################################################################################################
@@ -638,31 +610,19 @@ If specified, AWS Elastic Beanstalk restricts the returned descriptions to inclu
 
 =cut
 
-Readonly my %de_spec => ( ApplicationName       => { type => SCALAR,   optional => 1 },
-                          EnvironmentId         => { type => ARRAYREF, optional => 1 },
-                          EnvironmentNames      => { type => ARRAYREF, optional => 1 },
-                          IncludeDeleted        => { type => BOOLEAN,  optional => 1 },
-                          IncludedDeletedBackTo => { type => SCALAR,   optional => 1 },
-                          VersionLabel          => { type => SCALAR,   optional => 1 },
-                        );
+$API_SPEC{'DescribeEnvironments'} = { ApplicationName       => { type => SCALAR,   optional => 1 },
+                                      EnvironmentId         => { type => ARRAYREF, optional => 1 },
+                                      EnvironmentNames      => { type => ARRAYREF, optional => 1 },
+                                      IncludeDeleted        => { type => BOOLEAN,  optional => 1 },
+                                      IncludedDeletedBackTo => { type => SCALAR,   optional => 1 },
+                                      VersionLabel          => { type => SCALAR,   optional => 1 },
+                                   };
                           
 sub DescribeEnvironments {
   ### Enter: (caller(0))[3]
-  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
-  ### Operation = $op
-  my( $self )        = shift;
-  my %params         = validate( @_, \%de_spec );
-  $params{Operation} = $op;
-  ### %params
-  
-  # handle ARRAY / repeated options
-  ( %params ) = $self->_handleRepeatedOptions( 'EnvironmentId', %params );
-  ( %params ) = $self->_handleRepeatedOptions( 'EnvironmentNames', %params );
-  
-  ### %params
-  my( $rez ) = $self->get( params => \%params );
+  my( $rez ) = _genericCallHandler( @_ );
   ### Exit: (caller(0))[3]
-  return $rez->{"${op}Result"};
+  return $rez;
 }
 
 # #################################################################################################
@@ -687,24 +647,13 @@ If specified, AWS Elastic Beanstalk restricts the returned descriptions to only 
 
 =cut
 
-Readonly my %dev_spec => ( ApplicationNames => { type => ARRAYREF, optional => 1 } );
+$API_SPEC{'DescribeEvents'} = { ApplicationNames => { type => ARRAYREF, optional => 1 } };
                           
 sub DescribeEvents {
   ### Enter: (caller(0))[3]
-  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
-  ### Operation = $op
-  my( $self )        = shift;
-  my %params         = validate( @_, \%dev_spec );
-  $params{Operation} = $op;
-  ### %params
-  
-  # handle ARRAY / repeated options
-  ( %params ) = $self->_handleRepeatedOptions( 'ApplicationNames', %params );
-  
-  ### %params
-  my( $rez ) = $self->get( params => \%params );
+  my( $rez ) = _genericCallHandler( @_ );
   ### Exit: (caller(0))[3]
-  return $rez->{"${op}Result"};
+  return $rez;
 }
 
 ## ListAvailableSolutionStacks
@@ -727,15 +676,13 @@ B<none>
 
 =cut
 
+$API_SPEC{'ListAvailableSolutionStacks'} = { };
+
 sub ListAvailableSolutionStacks {
   ### Enter: (caller(0))[3]
-  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
-  ### Operation = $op
-  my( $self ) = shift;
-
-  my( $rez ) = $self->get( params => { Operation => $op } );
+  my( $rez ) = _genericCallHandler( @_ );
   ### Exit: (caller(0))[3]
-  return $rez->{"${op}Result"};
+  return $rez;
 }
 
 # RebuildEnvironment
