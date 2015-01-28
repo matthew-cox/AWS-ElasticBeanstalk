@@ -7,12 +7,11 @@ VERSION
 
 SYNOPSIS
     This module provides a Perl wrapper around Amazon's (
-    <http://aws.amazon.com> ) ElasticBeanstalk API. You will need to be a
-    Smartling customer and have your API Key and project Id before you'll be
-    able to do anything with this module.
+    <http://aws.amazon.com> ) ElasticBeanstalk API. You will need to be an
+    AWS customer wiht an ID and Secret with access to Elastic Beanstalk.
 
     Note: Some parameter validation is purposely lax. The API will generally
-    fail when invalid params are passed. The errors are not helpful.
+    fail when invalid params are passed. The errors may not be helpful.
 
 INTERFACE
   new
@@ -26,17 +25,207 @@ INTERFACE
 
     Parameters
     id (required)
-        You can find within your Smartling project's dashboard:
-        <https://dashboard.smartling.com/settings/api>
+        You can find more information in the AWS docs:
+        <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/Com
+        monParameters.html>
 
     region *(optional)* - defaults to us-east-1
-        You can find vailable regions at:
+        You can find available regions at:
         <http://docs.aws.amazon.com/general/latest/gr/rande.html#elasticbean
         stalk_region>
 
     secret (required)
-        You can find within your Smartling project's dashboard:
-        <https://dashboard.smartling.com/settings/api>
+        You can find more information in the AWS docs:
+        <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/Com
+        monParameters.html>
+
+  CheckDNSAvailability( CNAMEPrefix => 'the-thing-to-check' )
+    Returns a list of the available solution stack names.
+
+    Refer to
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Che
+    ckDNSAvailability.html>
+
+    Parameters
+    CNAMEPrefix (required scalar)
+        The prefix used when this CNAME is reserved.
+
+    Returns: XML result from API
+
+  DescribeApplicationVersions( )
+    Returns a list of the available solution stack names.
+
+    Refer to
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Des
+    cribeApplicationVersions.html>
+
+    Parameters
+    ApplicationName *(optional scalar)*
+        If specified, AWS Elastic Beanstalk restricts the returned
+        descriptions to only include ones that are associated with the
+        specified application.
+
+    VersionLabels *(optional array)*
+        If specified, AWS Elastic Beanstalk restricts the returned versions
+        to only include those with the specified names.
+
+    Returns: XML result from API
+
+  DescribeApplications( )
+    Returns a list of the available solution stack names.
+
+    Refer to
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Des
+    cribeApplications.html>
+
+    Parameters
+    ApplicationNames *(optional array)*
+        If specified, AWS Elastic Beanstalk restricts the returned
+        descriptions to only include those with the specified names.
+
+    Returns: XML result from API
+
+  DescribeConfigurationOptions( )
+    Returns a list of the available solution stack names.
+
+    Refer to
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Des
+    cribeConfigurationOptions.html>
+
+    Parameters
+    ApplicationName *(optional string)*
+        The name of the application associated with the configuration
+        template or environment. Only needed if you want to describe the
+        configuration options associated with either the configuration
+        template or environment.
+
+    EnvironmentName *(optional string)*
+        The name of the environment whose configuration options you want to
+        describe.
+
+    Options *(optional array)*
+        If specified, restricts the descriptions to only the specified
+        options.
+
+    SolutionStackName *(optional string)*
+        The name of the solution stack whose configuration options you want
+        to describe.
+
+    TemplateName *(optional string)*
+        The name of the configuration template whose configuration options
+        you want to describe.
+
+    Returns: XML result from API
+
+  DescribeConfigurationSettings( )
+    Returns a list of the available solution stack names.
+
+    Refer to
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Des
+    cribeConfigurationSettings.html>
+
+    Parameters
+    ApplicationName (required string)
+        The application for the environment or configuration template.
+
+    EnvironmentName I(optional string)
+        The name of the environment to describe.
+
+        Condition: You must specify either this or a TemplateName, but not
+        both. If you specify both, AWS Elastic Beanstalk returns an
+        InvalidParameterCombination error. If you do not specify either, AWS
+        Elastic Beanstalk returns MissingRequiredParameter error.
+
+    TemplateName I(optional string)
+        The name of the configuration template to describe.
+
+        Conditional: You must specify either this parameter or an
+        EnvironmentName, but not both. If you specify both, AWS Elastic
+        Beanstalk returns an InvalidParameterCombination error. If you do
+        not specify either, AWS Elastic Beanstalk returns a
+        MissingRequiredParameter error.
+
+    Returns: XML result from API
+
+  DescribeEnvironmentResources( )
+    Returns a list of the available solution stack names.
+
+    Refer to
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Des
+    cribeApplications.html>
+
+    Parameters
+    ApplicationNames *(optional array)*
+        If specified, AWS Elastic Beanstalk restricts the returned
+        descriptions to only include those with the specified names.
+
+    Returns: XML result from API
+
+  DescribeEnvironments( )
+    Returns a list of the available solution stack names.
+
+    Refer to
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Des
+    cribeEnvironments.html>
+
+    Parameters
+    ApplicationName *(optional string)*
+        If specified, AWS Elastic Beanstalk restricts the returned
+        descriptions to include only those that are associated with this
+        application.
+
+    EnvironmentIds *(optional array)*
+        If specified, AWS Elastic Beanstalk restricts the returned
+        descriptions to include only those that have the specified IDs.
+
+    EnvironmentNames *(optional array)*
+        If specified, AWS Elastic Beanstalk restricts the returned
+        descriptions to include only those that have the specified names.
+
+    IncludeDeleted *(optional boolean)*
+        Indicates whether to include deleted environments:
+
+        true: Environments that have been deleted after
+        IncludedDeletedBackTo are displayed. false: Do not include deleted
+        environments.
+
+    IncludedDeletedBackTo *(optional date)*
+        If specified when IncludeDeleted is set to true, then environments
+        deleted after this date are displayed.
+
+    VersionLabel *(optional string)*
+        If specified, AWS Elastic Beanstalk restricts the returned
+        descriptions to include only those that are associated with this
+        application version.
+
+    Returns: XML result from API
+
+  DescribeEvents( )
+    Returns list of event descriptions matching criteria up to the last 6
+    weeks.
+
+    Refer to
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Des
+    cribeEvents.html>
+
+    Parameters
+    ApplicationNames *(optional array)*
+        If specified, AWS Elastic Beanstalk restricts the returned
+        descriptions to only include those with the specified names.
+
+    Returns: XML result from API
+
+  ListAvailableSolutionStacks( )
+    Returns a list of the available solution stack names.
+
+    Refer to
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Lis
+    tAvailableSolutionStacks.html>
+
+    Parameters
+        none
+
+    Returns: XML result from API
 
   fileDelete(*%params*)
     Removes the file from Smartling. The file will no longer be available
@@ -59,77 +248,46 @@ INTERFACE
 
              {"response":{"code":"SUCCESS","messages":[],"data":null,}}
 
-  ListAvailableSolutionStacks( )
-    Returns a list of the available solution stack names.
-
-    Refer to
-    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Lis
-    tAvailableSolutionStacks.html>
-
-    Parameters
-        none
-
-    Returns: JSON result from API
-
-             {
-               "locales": [
-                   {
-                       "name": "Spanish",
-                       "locale": "es",
-                       "translated": "Español"
-                   },
-                   {
-                       "name": "French",
-                       "locale": "fr-FR",
-                       "translated": "Français"
-                   }
-               ]
-             }
-
-             locale - Locale identifier
-
-             name - Source locale name
-
-             translated - Localized locale name
-
 AUTHOR
     Matthew Cox, "<mcox at cpan.org>"
 
 BUGS
-    Please report any bugs or feature requests to "bug-webservice-smartling
-    at rt.cpan.org", or through the web interface at
-    <http://rt.cpan.org/NoAuth/ReportBug.html?Queue=WebService-Smartling>. I
-    will be notified, and then you'll automatically be notified of progress
-    on your bug as I make changes.
+    Please report any bugs or feature requests to
+    "bug-webservice-amazon-elasticbeanstalk at rt.cpan.org", or through the
+    web interface at
+    <http://rt.cpan.org/NoAuth/ReportBug.html?Queue=WebService-Amazon-Elasti
+    cBeanstalk>. I will be notified, and then you'll automatically be
+    notified of progress on your bug as I make changes.
 
 SUPPORT
     You can find documentation for this module with the perldoc command.
 
-        perldoc WebService::Smartling
+        perldoc WebService::Amazon::ElasticBeanstalk
 
     You can also look for information at:
 
     *   RT: CPAN's request tracker (report bugs here)
 
-        <http://rt.cpan.org/NoAuth/Bugs.html?Dist=WebService-Smartling>
+        <http://rt.cpan.org/NoAuth/Bugs.html?Dist=WebService-Amazon-ElasticB
+        eanstalk>
 
     *   AnnoCPAN: Annotated CPAN documentation
 
-        <http://annocpan.org/dist/WebService-Smartling>
+        <http://annocpan.org/dist/WebService-Amazon-ElasticBeanstalk>
 
     *   CPAN Ratings
 
-        <http://cpanratings.perl.org/d/WebService-Smartling>
+        <http://cpanratings.perl.org/d/WebService-Amazon-ElasticBeanstalk>
 
     *   Search CPAN
 
-        <http://search.cpan.org/dist/WebService-Smartling/>
+        <http://search.cpan.org/dist/WebService-Amazon-ElasticBeanstalk/>
 
 SEE ALSO
-    perl(1), WebService::Simple, JSON, HTTP::Common::Response
+    perl(1), WebService::Simple, XML::Simple, HTTP::Common::Response
 
 LICENSE AND COPYRIGHT
-    Copyright 2013 Matthew Cox.
+    Copyright 2015 Matthew Cox.
 
     This program is free software; you can redistribute it and/or modify it
     under the terms of the the Artistic License (2.0). You may obtain a copy

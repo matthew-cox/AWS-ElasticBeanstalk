@@ -37,15 +37,14 @@ our $VERSION = version->declare("v0.0.1");
 
 This module provides a Perl wrapper around Amazon's 
 ( L<http://aws.amazon.com> ) ElasticBeanstalk API.  You will need 
-to be a Smartling customer and have your API Key and project Id
-before you'll be able to do anything with this module.
+to be an AWS customer wiht an ID and Secret with access
+to Elastic Beanstalk.
 
 B<Note:> Some parameter validation is purposely lax. The API will 
-generally fail when invalid params are passed. The errors are not 
-helpful.
+generally fail when invalid params are passed. The errors may not 
+be helpful.
 
 =cut
-
 
 # From: http://docs.aws.amazon.com/general/latest/gr/rande.html#elasticbeanstalk_region
 Readonly our %REGIONS => ( 'us-east-1'      => 'https://elasticbeanstalk.us-east-1.amazonaws.com',
@@ -259,7 +258,7 @@ sub post {
 
 ## CheckDNSAvailability
 
-=head2 CheckDNSAvailability( )
+=head2 CheckDNSAvailability( CNAMEPrefix => 'the-thing-to-check' )
 
 Returns a list of the available solution stack names.
 
@@ -405,10 +404,309 @@ sub DescribeApplications {
 
 
 # DescribeConfigurationOptions
+
+=head2 DescribeConfigurationOptions( )
+
+Returns a list of the available solution stack names.
+
+Refer to L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_DescribeConfigurationOptions.html>
+
+=over 4
+
+=item B<Parameters>
+
+=item ApplicationName I<(optional string)>
+
+The name of the application associated with the configuration template or environment. Only needed if you want to describe the configuration options associated with either the configuration template or environment.
+
+=item EnvironmentName I<(optional string)>
+
+The name of the environment whose configuration options you want to describe.
+
+=item Options I<(optional array)>
+
+If specified, restricts the descriptions to only the specified options.
+
+=item SolutionStackName I<(optional string)>
+
+The name of the solution stack whose configuration options you want to describe.
+
+=item TemplateName I<(optional string)>
+
+The name of the configuration template whose configuration options you want to describe.
+
+=item B<Returns: XML result from API>
+
+=back
+
+=cut
+
+Readonly my %dco_spec => ( ApplicationName   => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i, optional => 1 },
+                           EnvironmentName   => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{4,23}$/i,  optional => 1 },
+                           Options           => { type => ARRAYREF, optional => 1 },
+                           SolutionStackName => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i, optional => 1 },
+                           TemplateName      => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i, optional => 1 },
+                          );
+                          
+sub DescribeConfigurationOptions {
+  ### Enter: (caller(0))[3]
+  my( $self )        = shift;
+  my %params         = validate( @_, \%da_spec );
+  $params{Operation} = 'DescribeConfigurationOptions';
+  ### %params
+  
+  if ( exists( $params{'Options'} ) ) {
+    my( $i ) = 1;
+    foreach my $app ( @{ $params{'Options'} } ) {
+      $params{"Options.member.${i}"} = $app;  
+      $i++;    
+    }
+    delete( $params{'Options'} );
+  }
+  
+  ### %params
+  my( $rez ) = $self->get( params => \%params );
+  ### Exit: (caller(0))[3]
+  return $rez->{'DescribeConfigurationOptionsResult'};
+}
+
 # DescribeConfigurationSettings
+
+=head2 DescribeConfigurationSettings( )
+
+Returns a list of the available solution stack names.
+
+Refer to L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_DescribeConfigurationSettings.html>
+
+=over 4
+
+=item B<Parameters>
+
+=item ApplicationName B<(required string)>
+
+The application for the environment or configuration template.
+
+=item EnvironmentName I(optional string)
+
+The name of the environment to describe.
+
+Condition: You must specify either this or a TemplateName, but not both. If you specify both, AWS Elastic Beanstalk returns an InvalidParameterCombination error. If you do not specify either, AWS Elastic Beanstalk returns MissingRequiredParameter error.
+
+=item TemplateName I(optional string)
+
+The name of the configuration template to describe.
+
+Conditional: You must specify either this parameter or an EnvironmentName, but not both. If you specify both, AWS Elastic Beanstalk returns an InvalidParameterCombination error. If you do not specify either, AWS Elastic Beanstalk returns a MissingRequiredParameter error.
+
+=item B<Returns: XML result from API>
+
+=back
+
+=cut
+
+Readonly my %dcs_spec => ( ApplicationName => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i, },
+                           EnvironmentName => { type => ARRAYREF, regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
+                           TemplateName    => { type => ARRAYREF, regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
+                          );
+                          
+sub DescribeConfigurationSettings {
+  ### Enter: (caller(0))[3]
+  my( $self )        = shift;
+  my %params         = validate( @_, \%dcs_spec );
+  $params{Operation} = 'DescribeConfigurationSettings';
+  
+  if ( !exists( $params{'EnvironmentName'} ) && !exists( $params{'TemplateName'} ) ) {
+    croak( "Provide one of EnvironmentName or TemplateName" );
+  }
+  
+  if ( exists( $params{'EnvironmentName'} ) && exists( $params{'TemplateName'} ) ) {
+    croak( "Provide only one of EnvironmentName or TemplateName" );
+  }
+  
+  ### %params
+  my( $rez ) = $self->get( params => \%params );
+  ### Exit: (caller(0))[3]
+  return $rez->{'DescribeConfigurationSettingsResult'};
+}
+
+# #################################################################################################
+
 # DescribeEnvironmentResources
-# DescribeEnvironments
-# DescribeEvents
+
+=head2 DescribeEnvironmentResources( )
+
+Returns a list of the available solution stack names.
+
+Refer to L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_DescribeApplications.html>
+
+=over 4
+
+=item B<Parameters>
+
+=item ApplicationNames I<(optional array)>
+
+If specified, AWS Elastic Beanstalk restricts the returned descriptions to only include those with the specified names.
+
+=item B<Returns: XML result from API>
+
+=back
+
+=cut
+
+Readonly my %der_spec => ( ApplicationNames => { type => ARRAYREF, optional => 1 } );
+                          
+sub DescribeEnvironmentResources {
+  ### Enter: (caller(0))[3]
+  my( $self )        = shift;
+  my %params         = validate( @_, \%da_spec );
+  $params{Operation} = 'DescribeEnvironmentResources';
+  ### %params
+  
+  if ( exists( $params{'ApplicationNames'} ) ) {
+    my( $i ) = 1;
+    foreach my $app ( @{ $params{'ApplicationNames'} } ) {
+      $params{"ApplicationNames.member.${i}"} = $app;  
+      $i++;    
+    }
+    delete( $params{'ApplicationNames'} );
+  }
+  
+  ### %params
+  my( $rez ) = $self->get( params => \%params );
+  ### Exit: (caller(0))[3]
+  return $rez->{'DescribeEnvironmentResourcesResult'};
+}
+
+# #################################################################################################
+
+=head2 DescribeEnvironments( )
+
+Returns a list of the available solution stack names.
+
+Refer to L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_DescribeEnvironments.html>
+
+=over 4
+
+=item B<Parameters>
+
+=item ApplicationName I<(optional string)>
+
+If specified, AWS Elastic Beanstalk restricts the returned descriptions to include only those that are associated with this application.
+
+=item EnvironmentIds I<(optional array)>
+
+If specified, AWS Elastic Beanstalk restricts the returned descriptions to include only those that have the specified IDs.
+
+=item EnvironmentNames I<(optional array)>
+
+If specified, AWS Elastic Beanstalk restricts the returned descriptions to include only those that have the specified names.
+
+=item IncludeDeleted I<(optional boolean)>
+
+Indicates whether to include deleted environments:
+
+true: Environments that have been deleted after IncludedDeletedBackTo are displayed.
+false: Do not include deleted environments.
+
+=item IncludedDeletedBackTo I<(optional date)>
+
+If specified when IncludeDeleted is set to true, then environments deleted after this date are displayed.
+
+=item VersionLabel I<(optional string)>
+
+If specified, AWS Elastic Beanstalk restricts the returned descriptions to include only those that are associated with this application version.
+
+=item B<Returns: XML result from API>
+
+=back
+
+=cut
+
+Readonly my %de_spec => ( ApplicationName       => { type => SCALAR,   optional => 1 },
+                          EnvironmentId         => { type => ARRAYREF, optional => 1 },
+                          EnvironmentNames      => { type => ARRAYREF, optional => 1 },
+                          IncludeDeleted        => { type => BOOLEAN,  optional => 1 },
+                          IncludedDeletedBackTo => { type => SCALAR,   optional => 1 },
+                          VersionLabel          => { type => SCALAR,   optional => 1 },
+                        );
+                          
+sub DescribeEnvironments {
+  ### Enter: (caller(0))[3]
+  my( $self )        = shift;
+  my %params         = validate( @_, \%de_spec );
+  $params{Operation} = 'DescribeEnvironments';
+  ### %params
+  
+  if ( exists( $params{'EnvironmentId'} ) ) {
+    my( $i ) = 1;
+    foreach my $app ( @{ $params{'EnvironmentId'} } ) {
+      $params{"EnvironmentId.member.${i}"} = $app;  
+      $i++;    
+    }
+    delete( $params{'EnvironmentId'} );
+  }
+
+  if ( exists( $params{'EnvironmentNames'} ) ) {
+    my( $i ) = 1;
+    foreach my $app ( @{ $params{'EnvironmentNames'} } ) {
+      $params{"EnvironmentNames.member.${i}"} = $app;  
+      $i++;    
+    }
+    delete( $params{'EnvironmentNames'} );
+  }
+  
+  ### %params
+  my( $rez ) = $self->get( params => \%params );
+  ### Exit: (caller(0))[3]
+  return $rez->{'DescribeEnvironmentsResult'};
+}
+
+# #################################################################################################
+
+=head2 DescribeEvents( )
+
+Returns list of event descriptions matching criteria up to the last 6 weeks.
+
+Refer to L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_DescribeEvents.html>
+
+=over 4
+
+=item B<Parameters>
+
+=item ApplicationNames I<(optional array)>
+
+If specified, AWS Elastic Beanstalk restricts the returned descriptions to only include those with the specified names.
+
+=item B<Returns: XML result from API>
+
+=back
+
+=cut
+
+Readonly my %dev_spec => ( ApplicationNames => { type => ARRAYREF, optional => 1 } );
+                          
+sub DescribeEvents {
+  ### Enter: (caller(0))[3]
+  my( $self )        = shift;
+  my %params         = validate( @_, \%da_spec );
+  $params{Operation} = 'DescribeEvents';
+  ### %params
+  
+  if ( exists( $params{'ApplicationNames'} ) ) {
+    my( $i ) = 1;
+    foreach my $app ( @{ $params{'ApplicationNames'} } ) {
+      $params{"ApplicationNames.member.${i}"} = $app;  
+      $i++;    
+    }
+    delete( $params{'ApplicationNames'} );
+  }
+  
+  ### %params
+  my( $rez ) = $self->get( params => \%params );
+  ### Exit: (caller(0))[3]
+  return $rez->{'DescribeEventsResult'};
+}
+
 ## ListAvailableSolutionStacks
 
 =head2 ListAvailableSolutionStacks( )
@@ -524,15 +822,15 @@ Matthew Cox, C<< <mcox at cpan.org> >>
 
 =head1 BUGS
 
-Please report any bugs or feature requests to C<bug-webservice-smartling at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=WebService-Smartling>.  I will be notified, and then you'll
+Please report any bugs or feature requests to C<bug-webservice-amazon-elasticbeanstalk at rt.cpan.org>, or through
+the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=WebService-Amazon-ElasticBeanstalk>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
 
 =head1 SUPPORT
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc WebService::Smartling
+    perldoc WebService::Amazon::ElasticBeanstalk
 
 
 You can also look for information at:
@@ -541,29 +839,29 @@ You can also look for information at:
 
 =item * RT: CPAN's request tracker (report bugs here)
 
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=WebService-Smartling>
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=WebService-Amazon-ElasticBeanstalk>
 
 =item * AnnoCPAN: Annotated CPAN documentation
 
-L<http://annocpan.org/dist/WebService-Smartling>
+L<http://annocpan.org/dist/WebService-Amazon-ElasticBeanstalk>
 
 =item * CPAN Ratings
 
-L<http://cpanratings.perl.org/d/WebService-Smartling>
+L<http://cpanratings.perl.org/d/WebService-Amazon-ElasticBeanstalk>
 
 =item * Search CPAN
 
-L<http://search.cpan.org/dist/WebService-Smartling/>
+L<http://search.cpan.org/dist/WebService-Amazon-ElasticBeanstalk/>
 
 =back
 
 =head1 SEE ALSO
 
-perl(1), L<WebService::Simple>, L<JSON>, L<HTTP::Common::Response>
+perl(1), L<WebService::Simple>, L<XML::Simple>, L<HTTP::Common::Response>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2013 Matthew Cox.
+Copyright 2015 Matthew Cox.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the the Artistic License (2.0). You may obtain a

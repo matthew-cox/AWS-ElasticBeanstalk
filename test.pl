@@ -10,11 +10,15 @@ my( %PARAMS ) = ( id     => 'foo',
 my( $rez );                  
 my( $ebn ) = WebService::Amazon::ElasticBeanstalk->new( param => \%PARAMS );
 
-( $rez ) = $ebn->CheckDNSAvailability( CNAMEPrefix => "fuckity-fuck-fuck" );
-### $rez
-( $rez ) = $ebn->DescribeApplications( ApplicationNames => [ 'fuck' ] );
-### $rez
-( $rez ) = $ebn->DescribeApplicationVersions( ApplicationName => 'fuck' );
-### $rez
-( $rez ) = $ebn->ListAvailableSolutionStacks();
+#( $rez ) = $ebn->CheckDNSAvailability( CNAMEPrefix => "fuckity-fuck-fuck" );
+## $rez
+#( $rez ) = $ebn->DescribeApplications( ApplicationNames => [ 'fuck' ] );
+## $rez
+#( $rez ) = $ebn->DescribeApplicationVersions( ApplicationName => 'fuck' );
+## $rez
+#( $rez ) = $ebn->ListAvailableSolutionStacks();
+## $rez
+#( $rez ) = $ebn->DescribeConfigurationOptions( ApplicationName => 'fuck' );
+## $rez
+( $rez ) = $ebn->DescribeConfigurationSettings( ApplicationName => 'fuck', EnvironmentName => 'fuck-env' );
 ### $rez
