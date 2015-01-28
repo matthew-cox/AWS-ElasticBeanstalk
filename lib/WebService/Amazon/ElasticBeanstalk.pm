@@ -173,10 +173,10 @@ sub new {
   ##### %params
   
   # change the endpoint for the requested region
-  if ( $params{region} && exists( $REGIONS{$params{region}} ) ) {
+  if ( $params{region} && $REGIONS{$params{region}} ) {
     $self->{base_url} = $REGIONS{$params{region}};
   }
-  elsif ( $params{region} && !exists( $REGIONS{$params{region}} ) ) {
+  elsif ( $params{region} && !$REGIONS{$params{region}} ) {
     carp( "Unknown region: $params{region}; using $DEF_REGION...")
   }
   ### Exit: (caller(0))[3]
@@ -197,7 +197,7 @@ sub get {
   my $ua = LWP::UserAgent->new();
 
   ### %args
-  if ( !exists( $args{params} ) ) {
+  if ( !$args{params} ) {
     carp( "No paramerter provided for request!" );
     return undef;
   }
@@ -259,7 +259,7 @@ sub _handleRepeatedOptions {
   my( $repeat, %params ) = @_;
   #### %params
 
-  if ( exists( $params{$repeat} ) && ref( $params{$repeat} ) eq "ARRAY" ) {
+  if ( $params{$repeat} && ref( $params{$repeat} ) eq "ARRAY" ) {
     my( $i ) = 1;
     foreach my $t ( @{ $params{$repeat} } ) {
       $params{"${repeat}.member.${i}"} = $t;     
@@ -511,12 +511,12 @@ $API_SPEC{'DescribeConfigurationSettings'} = { ApplicationName => { type => SCAL
                                                                     callbacks => {
                                                                       'other_params' => sub { 
                                                                         my( $me, $others ) = @_;
-                                                                        if ( !exists( $others->{'EnvironmentName'} ) && !exists( $others->{'TemplateName'} ) ) {
+                                                                        if ( !$others->{'EnvironmentName'} && !$others->{'TemplateName'} ) {
                                                                           croak( "Provide one of EnvironmentName or TemplateName" );
                                                                           return 0;
                                                                         }
   
-                                                                        if ( exists( $others->{'EnvironmentName'} ) && exists( $others->{'TemplateName'} ) ) {
+                                                                        if ( $others->{'EnvironmentName'} && $others->{'TemplateName'} ) {
                                                                           croak( "Provide only one of EnvironmentName or TemplateName" );
                                                                           return 0;
                                                                         }
@@ -746,12 +746,12 @@ $API_SPEC{'ValidateConfigurationSettings'} = { ApplicationName => { type => SCAL
                                                                     callbacks => {
                                                                       'other_params' => sub { 
                                                                         my( $me, $others ) = @_;
-                                                                        if ( !exists( $others->{'EnvironmentName'} ) && !exists( $others->{'TemplateName'} ) ) {
+                                                                        if ( !$others->{'EnvironmentName'} && !$others->{'TemplateName'} ) {
                                                                           croak( "Provide one of EnvironmentName or TemplateName" );
                                                                           return 0;
                                                                         }
 
-                                                                        if ( exists( $others->{'EnvironmentName'} ) && exists( $others->{'TemplateName'} ) ) {
+                                                                        if ( $others->{'EnvironmentName'} && $others->{'TemplateName'} ) {
                                                                           croak( "Provide only one of EnvironmentName or TemplateName" );
                                                                           return 0;
                                                                         }
