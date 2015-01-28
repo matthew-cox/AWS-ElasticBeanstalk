@@ -298,10 +298,10 @@ sub _genericCallHandler {
   return $rez->{"${op}Result"};
 }
 
-sub one_of {
-  my @options = @_;
-  _bless_right_class(_mk_autodoc(sub { _count_of(\@options, 1)->(@_) }));
-}
+# sub one_of {
+#   my @options = @_;
+#   _bless_right_class(_mk_autodoc(sub { _count_of(\@options, 1)->(@_) }));
+# }
 
 # #################################################################################################
 # 
@@ -349,7 +349,8 @@ sub CheckDNSAvailability {
 # DeleteConfigurationTemplate
 # DeleteEnvironmentConfiguration
 
-## DescribeApplicationVersions
+# #################################################################################################
+# DescribeApplicationVersions
 
 =head2 DescribeApplicationVersions( )
 
@@ -386,6 +387,7 @@ sub DescribeApplicationVersions {
   return $rez;
 }
 
+# #################################################################################################
 # DescribeApplications
 
 =head2 DescribeApplications( )
@@ -417,7 +419,7 @@ sub DescribeApplications {
   return $rez;
 }
 
-
+# #################################################################################################
 # DescribeConfigurationOptions
 
 =head2 DescribeConfigurationOptions( )
@@ -470,6 +472,7 @@ sub DescribeConfigurationOptions {
   return $rez;
 }
 
+# #################################################################################################
 # DescribeConfigurationSettings
 
 =head2 DescribeConfigurationSettings( )
@@ -533,7 +536,6 @@ sub DescribeConfigurationSettings {
 }
 
 # #################################################################################################
-
 # DescribeEnvironmentResources
 
 =head2 DescribeEnvironmentResources( )
@@ -566,6 +568,7 @@ sub DescribeEnvironmentResources {
 }
 
 # #################################################################################################
+# DescribeEnvironments
 
 =head2 DescribeEnvironments( )
 
@@ -626,6 +629,7 @@ sub DescribeEnvironments {
 }
 
 # #################################################################################################
+# DescribeEvents
 
 =head2 DescribeEvents( )
 
@@ -656,6 +660,7 @@ sub DescribeEvents {
   return $rez;
 }
 
+# #################################################################################################
 ## ListAvailableSolutionStacks
 
 =head2 ListAvailableSolutionStacks( )
@@ -737,36 +742,33 @@ Condition: You cannot specify both this and an environment name.
 
 =cut
 
-Readonly my %vcs_spec => ( ApplicationName => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{1,100}$/i, },
-                           EnvironmentName => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
-                           OptionSettings  => { type => ARRAYREF },
-                           TemplateName    => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
-                          );
+$API_SPEC{'ValidateConfigurationSettings'} = { ApplicationName => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{1,100}$/i,
+                                                                    callbacks => {
+                                                                      'other_params' => sub { 
+                                                                        my( $me, $others ) = @_;
+                                                                        if ( !exists( $others->{'EnvironmentName'} ) && !exists( $others->{'TemplateName'} ) ) {
+                                                                          croak( "Provide one of EnvironmentName or TemplateName" );
+                                                                          return 0;
+                                                                        }
+
+                                                                        if ( exists( $others->{'EnvironmentName'} ) && exists( $others->{'TemplateName'} ) ) {
+                                                                          croak( "Provide only one of EnvironmentName or TemplateName" );
+                                                                          return 0;
+                                                                        }
+                                                                        return 1;
+                                                                      }
+                                                                    }
+                                                                  },
+                                               EnvironmentName => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
+                                               OptionSettings  => { type => ARRAYREF },
+                                               TemplateName    => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
+                                             };
 
 sub ValidateConfigurationSettings {
   ### Enter: (caller(0))[3]
-  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
-  ### Operation = $op
-  my( $self )        = shift;
-  my %params         = validate( @_, \%vcs_spec );
-  $params{Operation} = $op;
-  ### %params
-
-  if ( !exists( $params{'EnvironmentName'} ) && !exists( $params{'TemplateName'} ) ) {
-    croak( "Provide one of EnvironmentName or TemplateName" );
-  }
-  
-  if ( exists( $params{'EnvironmentName'} ) && exists( $params{'TemplateName'} ) ) {
-    croak( "Provide only one of EnvironmentName or TemplateName" );
-  }
-  
-  # handle ARRAY / repeated options
-  ( %params ) = $self->_handleRepeatedOptions( 'OptionSettings', %params );
-
-  ### %params
-  my( $rez ) = $self->get( params => \%params );
+  my( $rez ) = _genericCallHandler( @_ );
   ### Exit: (caller(0))[3]
-  return $rez->{"${op}Result"};
+  return $rez;
 }
 
 
