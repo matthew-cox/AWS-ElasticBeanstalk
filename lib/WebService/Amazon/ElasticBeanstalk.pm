@@ -251,6 +251,27 @@ sub post {
   }
 }
 
+# implement a general way to configure repeated options to match the API
+sub _handleRepeatedOptions {
+  ### Enter: (caller(0))[3]
+  my( $self ) = shift;
+  my( $repeat, %params ) = @_;
+  #### %params
+
+  if ( exists( $params{$repeat} ) && ref( $params{$repeat} ) eq "ARRAY" ) {
+    my( $i ) = 1;
+    foreach my $t ( @{ $params{$repeat} } ) {
+      $params{"${repeat}.member.${i}"} = $t;     
+      $i++; 
+    }
+    delete( $params{$repeat} );
+  }
+  
+  #### %params
+  ### Exit: (caller(0))[3]
+  return %params;
+}
+
 # #################################################################################################
 # 
 # API Methods Below
@@ -282,16 +303,16 @@ Readonly my %dns_spec => ( CNAMEPrefix => { type => SCALAR, regex => qr/^[A-Z0-9
 
 sub CheckDNSAvailability {
   ### Enter: (caller(0))[3]
-  my( $self ) = shift;
-  my %params  = validate( @_, \%dns_spec );
-    
-  $params{Operation} = 'CheckDNSAvailability';
+  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
+  ### Operation = $op
+  my( $self )        = shift;
+  my %params         = validate( @_, \%dns_spec );
+  $params{Operation} = $op;
   
   ### %params
-  
   my( $rez ) = $self->get( params => \%params );
   ### Exit: (caller(0))[3]
-  return $rez->{'CheckDNSAvailabilityResult'};
+  return $rez->{"${op}Result"};
 }
 
 # CreateApplication
@@ -336,24 +357,19 @@ Readonly my %dav_spec => ( ApplicationName => { type => SCALAR,   regex    => qr
 
 sub DescribeApplicationVersions {
   ### Enter: (caller(0))[3]
+  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
+  ### Operation = $op
   my( $self )        = shift;
   my %params         = validate( @_, \%dav_spec );
-  $params{Operation} = 'DescribeApplicationVersions';
+  $params{Operation} = $op
   ### %params
   
-  if ( exists( $params{'VersionLabels'} ) ) {
-    my( $i ) = 1;
-    foreach my $app ( @{ $params{'VersionLabels'} } ) {
-      $params{"VersionLabels.member.${i}"} = $app;     
-      $i++; 
-    }
-    delete( $params{VersionLabels} );
-  }
+  ( %params ) = $self->_handleRepeatedOptions( 'VersionLabels', %params );
   
   ### %params
   my( $rez ) = $self->get( params => \%params );
   ### Exit: (caller(0))[3]
-  return $rez->{'DescribeApplicationVersionsResult'};
+  return $rez->{"${op}Result"};
 }
 
 # DescribeApplications
@@ -382,24 +398,20 @@ Readonly my %da_spec => ( ApplicationNames => { type => ARRAYREF, optional => 1 
                           
 sub DescribeApplications {
   ### Enter: (caller(0))[3]
+  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
+  ### Operation = $op
   my( $self )        = shift;
   my %params         = validate( @_, \%da_spec );
-  $params{Operation} = 'DescribeApplications';
+  $params{Operation} = $op;
   ### %params
   
-  if ( exists( $params{'ApplicationNames'} ) ) {
-    my( $i ) = 1;
-    foreach my $app ( @{ $params{'ApplicationNames'} } ) {
-      $params{"ApplicationNames.member.${i}"} = $app;  
-      $i++;    
-    }
-    delete( $params{'ApplicationNames'} );
-  }
+  # handle ARRAY / repeated options
+  ( %params ) = $self->_handleRepeatedOptions( 'ApplicationNames', %params );
   
   ### %params
   my( $rez ) = $self->get( params => \%params );
   ### Exit: (caller(0))[3]
-  return $rez->{'DescribeApplicationsResult'};
+  return $rez->{"${op}Result"};
 }
 
 
@@ -450,24 +462,20 @@ Readonly my %dco_spec => ( ApplicationName   => { type => SCALAR,   regex => qr/
                           
 sub DescribeConfigurationOptions {
   ### Enter: (caller(0))[3]
+  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
+  ### Operation = $op
   my( $self )        = shift;
   my %params         = validate( @_, \%da_spec );
-  $params{Operation} = 'DescribeConfigurationOptions';
+  $params{Operation} = $op;
   ### %params
   
-  if ( exists( $params{'Options'} ) ) {
-    my( $i ) = 1;
-    foreach my $app ( @{ $params{'Options'} } ) {
-      $params{"Options.member.${i}"} = $app;  
-      $i++;    
-    }
-    delete( $params{'Options'} );
-  }
+  # handle ARRAY / repeated options
+  ( %params ) = $self->_handleRepeatedOptions( 'Options', %params );
   
   ### %params
   my( $rez ) = $self->get( params => \%params );
   ### Exit: (caller(0))[3]
-  return $rez->{'DescribeConfigurationOptionsResult'};
+  return $rez->{"${op}Result"};
 }
 
 # DescribeConfigurationSettings
@@ -511,9 +519,11 @@ Readonly my %dcs_spec => ( ApplicationName => { type => SCALAR,   regex => qr/^[
                           
 sub DescribeConfigurationSettings {
   ### Enter: (caller(0))[3]
+  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
+  ### Operation = $op
   my( $self )        = shift;
   my %params         = validate( @_, \%dcs_spec );
-  $params{Operation} = 'DescribeConfigurationSettings';
+  $params{Operation} = $op;
   
   if ( !exists( $params{'EnvironmentName'} ) && !exists( $params{'TemplateName'} ) ) {
     croak( "Provide one of EnvironmentName or TemplateName" );
@@ -526,7 +536,7 @@ sub DescribeConfigurationSettings {
   ### %params
   my( $rez ) = $self->get( params => \%params );
   ### Exit: (caller(0))[3]
-  return $rez->{'DescribeConfigurationSettingsResult'};
+  return $rez->{"${op}Result"};
 }
 
 # #################################################################################################
@@ -557,24 +567,20 @@ Readonly my %der_spec => ( ApplicationNames => { type => ARRAYREF, optional => 1
                           
 sub DescribeEnvironmentResources {
   ### Enter: (caller(0))[3]
+  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
+  ### Operation = $op
   my( $self )        = shift;
   my %params         = validate( @_, \%da_spec );
-  $params{Operation} = 'DescribeEnvironmentResources';
+  $params{Operation} = $op;
   ### %params
   
-  if ( exists( $params{'ApplicationNames'} ) ) {
-    my( $i ) = 1;
-    foreach my $app ( @{ $params{'ApplicationNames'} } ) {
-      $params{"ApplicationNames.member.${i}"} = $app;  
-      $i++;    
-    }
-    delete( $params{'ApplicationNames'} );
-  }
+  # handle ARRAY / repeated options
+  ( %params ) = $self->_handleRepeatedOptions( 'ApplicationNames', %params );
   
   ### %params
   my( $rez ) = $self->get( params => \%params );
   ### Exit: (caller(0))[3]
-  return $rez->{'DescribeEnvironmentResourcesResult'};
+  return $rez->{"${op}Result"};
 }
 
 # #################################################################################################
@@ -632,33 +638,21 @@ Readonly my %de_spec => ( ApplicationName       => { type => SCALAR,   optional 
                           
 sub DescribeEnvironments {
   ### Enter: (caller(0))[3]
+  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
+  ### Operation = $op
   my( $self )        = shift;
   my %params         = validate( @_, \%de_spec );
-  $params{Operation} = 'DescribeEnvironments';
+  $params{Operation} = $op;
   ### %params
   
-  if ( exists( $params{'EnvironmentId'} ) ) {
-    my( $i ) = 1;
-    foreach my $app ( @{ $params{'EnvironmentId'} } ) {
-      $params{"EnvironmentId.member.${i}"} = $app;  
-      $i++;    
-    }
-    delete( $params{'EnvironmentId'} );
-  }
-
-  if ( exists( $params{'EnvironmentNames'} ) ) {
-    my( $i ) = 1;
-    foreach my $app ( @{ $params{'EnvironmentNames'} } ) {
-      $params{"EnvironmentNames.member.${i}"} = $app;  
-      $i++;    
-    }
-    delete( $params{'EnvironmentNames'} );
-  }
+  # handle ARRAY / repeated options
+  ( %params ) = $self->_handleRepeatedOptions( 'EnvironmentId', %params );
+  ( %params ) = $self->_handleRepeatedOptions( 'EnvironmentNames', %params );
   
   ### %params
   my( $rez ) = $self->get( params => \%params );
   ### Exit: (caller(0))[3]
-  return $rez->{'DescribeEnvironmentsResult'};
+  return $rez->{"${op}Result"};
 }
 
 # #################################################################################################
@@ -687,24 +681,20 @@ Readonly my %dev_spec => ( ApplicationNames => { type => ARRAYREF, optional => 1
                           
 sub DescribeEvents {
   ### Enter: (caller(0))[3]
+  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
+  ### Operation = $op
   my( $self )        = shift;
   my %params         = validate( @_, \%da_spec );
-  $params{Operation} = 'DescribeEvents';
+  $params{Operation} = $op;
   ### %params
   
-  if ( exists( $params{'ApplicationNames'} ) ) {
-    my( $i ) = 1;
-    foreach my $app ( @{ $params{'ApplicationNames'} } ) {
-      $params{"ApplicationNames.member.${i}"} = $app;  
-      $i++;    
-    }
-    delete( $params{'ApplicationNames'} );
-  }
+  # handle ARRAY / repeated options
+  ( %params ) = $self->_handleRepeatedOptions( 'ApplicationNames', %params );
   
   ### %params
   my( $rez ) = $self->get( params => \%params );
   ### Exit: (caller(0))[3]
-  return $rez->{'DescribeEventsResult'};
+  return $rez->{"${op}Result"};
 }
 
 ## ListAvailableSolutionStacks
@@ -729,11 +719,13 @@ B<none>
 
 sub ListAvailableSolutionStacks {
   ### Enter: (caller(0))[3]
+  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
+  ### Operation = $op
   my( $self ) = shift;
 
-  my( $rez ) = $self->get( params => { Operation => 'ListAvailableSolutionStacks' } );
+  my( $rez ) = $self->get( params => { Operation => $op } );
   ### Exit: (caller(0))[3]
-  return $rez->{'ListAvailableSolutionStacksResult'};
+  return $rez->{"${op}Result"};
 }
 
 # RebuildEnvironment
@@ -796,24 +788,20 @@ Readonly my %vcs_spec => ( ApplicationName => { type => SCALAR,  regex => qr/^[A
 
 sub ValidateConfigurationSettings {
   ### Enter: (caller(0))[3]
+  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
+  ### Operation = $op
   my( $self )        = shift;
   my %params         = validate( @_, \%vcs_spec );
-  $params{Operation} = 'ValidateConfigurationSettings';
+  $params{Operation} = $op;
   ### %params
 
-  if ( exists( $params{'OptionSettings'} ) ) {
-    my( $i ) = 1;
-    foreach my $app ( @{ $params{'OptionSettings'} } ) {
-      $params{"OptionSettings.member.${i}"} = $app;  
-      $i++;    
-    }
-    delete( $params{'OptionSettings'} );
-  }
+  # handle ARRAY / repeated options
+  ( %params ) = $self->_handleRepeatedOptions( 'OptionSettings', %params );
 
   ### %params
   my( $rez ) = $self->get( params => \%params );
   ### Exit: (caller(0))[3]
-  return $rez->{'ValidateConfigurationSettingsResult'};
+  return $rez->{"${op}Result"};
 }
 
 
