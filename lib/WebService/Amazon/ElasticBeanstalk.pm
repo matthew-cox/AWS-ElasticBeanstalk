@@ -746,7 +746,76 @@ sub ListAvailableSolutionStacks {
 # UpdateApplicationVersion
 # UpdateConfigurationTemplate
 # UpdateEnvironment
+
+# #################################################################################################
 # ValidateConfigurationSettings
+
+=head2 ValidateConfigurationSettings( )
+
+Takes a set of configuration settings and either a configuration template or environment, and determines whether those values are valid.
+
+This action returns a list of messages indicating any errors or warnings associated with the selection of option values.
+
+Refer to L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_ValidateConfigurationSettings.html>
+
+=over 4
+
+=item B<Parameters>
+
+=item ApplicationName B<(require string)>
+
+The name of the application that the configuration template or environment belongs to.
+
+=item EnvironmentName I<(optional string)>
+
+The name of the environment to validate the settings against.
+
+Condition: You cannot specify both this and a configuration template name.
+
+=item OptionSettings I<(required array)>
+
+A list of the options and desired values to evaluate.
+
+=item TemplateName I<(optional string)>
+
+The name of the configuration template to validate the settings against.
+
+Condition: You cannot specify both this and an environment name.
+
+=item B<Returns: XML result from API>
+
+=back
+
+=cut
+
+Readonly my %vcs_spec => ( ApplicationName => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{1,100}$/i, },
+                           EnvironmentName => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
+                           OptionSettings  => { type => ARRAYREF },
+                           TemplateName    => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
+                          );
+
+sub ValidateConfigurationSettings {
+  ### Enter: (caller(0))[3]
+  my( $self )        = shift;
+  my %params         = validate( @_, \%vcs_spec );
+  $params{Operation} = 'ValidateConfigurationSettings';
+  ### %params
+
+  if ( exists( $params{'OptionSettings'} ) ) {
+    my( $i ) = 1;
+    foreach my $app ( @{ $params{'OptionSettings'} } ) {
+      $params{"OptionSettings.member.${i}"} = $app;  
+      $i++;    
+    }
+    delete( $params{'OptionSettings'} );
+  }
+
+  ### %params
+  my( $rez ) = $self->get( params => \%params );
+  ### Exit: (caller(0))[3]
+  return $rez->{'ValidateConfigurationSettingsResult'};
+}
+
 
 =head2 fileDelete(I<%params>)
 
