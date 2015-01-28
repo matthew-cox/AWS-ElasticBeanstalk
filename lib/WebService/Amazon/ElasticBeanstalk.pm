@@ -47,6 +47,7 @@ be helpful.
 =cut
 
 # From: http://docs.aws.amazon.com/general/latest/gr/rande.html#elasticbeanstalk_region
+# FIXME: use an array and assemble the URL in the constructor?
 Readonly our %REGIONS => ( 'us-east-1'      => 'https://elasticbeanstalk.us-east-1.amazonaws.com',
                            'us-west-1'      => 'https://elasticbeanstalk.us-west-1.amazonaws.com',
                            'us-west-2'      => 'https://elasticbeanstalk.us-west-2.amazonaws.com',
@@ -60,6 +61,7 @@ Readonly our %REGIONS => ( 'us-east-1'      => 'https://elasticbeanstalk.us-east
 
 # Global API Version
 Readonly our $API_VERSION => '2010-12-01';
+Readonly our $DEF_REGION  => 'us-east-1';
 
 # some defaults
 __PACKAGE__->config(
@@ -85,8 +87,8 @@ Readonly our $REGEX_DATE_ISO8601 => '^([\+-]?\d{4}(?!\d{2}\b))((-?)((0[1-9]|1[0-
 =head2 new
 
 Inherited from L<WebService::Simple>, and takes all the same arguments. 
-You B<must> provide the Amazon required arguments of B<id>, B<region>, and 
-B<secret> in the param hash:
+You B<must> provide the Amazon required arguments of B<id>, and B<secret> 
+in the param hash:
 
  my $ebn = WebService::Amazon::ElasticBeanstalk->new( param => { id     => $AWS_ACCESS_KEY_ID,
                                                                  region => 'us-east-1',
@@ -115,12 +117,6 @@ L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/CommonParamete
 
 =cut
 
-my( %ALL_PATS ) = (
-  id          => { type => SCALAR, regex => qr/$REGEX_ID/, },
-  region      => { type => SCALAR, regex => qr/$REGEX_REGION/, optional => 1, default => 'us-east-1', },
-  secret      => { type => SCALAR, regex => qr/$REGEX_SECRET/, },
-
-);
 #   apiKey             => { type => SCALAR, regex => qr/$REGEX_APIKEY/, },
 #   approved           => { type => SCALAR, },
 #   callbackUrl        => { type => SCALAR, regex => qr/$REGEX_URL/, },
@@ -146,11 +142,13 @@ my( %ALL_PATS ) = (
 #   uriMask            => { type => SCALAR, },
 # );
 
-my( %global_spec ) = ( 
-  id     => $ALL_PATS{id},
-  region => $ALL_PATS{region},
-  secret => $ALL_PATS{secret},
-);
+our( %API_SPEC );
+
+$API_SPEC{'new'} = { 
+  id     => { type => SCALAR, regex => qr/$REGEX_ID/, },
+  region => { type => SCALAR, regex => qr/$REGEX_REGION/, optional => 1, default => $DEF_REGION, },
+  secret => { type => SCALAR, regex => qr/$REGEX_SECRET/, },
+};
 
 # #################################################################################################
 # 
@@ -171,12 +169,15 @@ sub new {
   
   # this is silly, but easier for validation
   my( @temp_params ) = %{ $self->{basic_params} };
-  my %params = validate( @temp_params, \%global_spec );
+  my %params = validate( @temp_params, $API_SPEC{'new'} );
   ##### %params
   
   # change the endpoint for the requested region
-  if ( $params{region} ) {
+  if ( $params{region} && exists( $REGIONS{$params{region}} ) ) {
     $self->{base_url} = $REGIONS{$params{region}};
+  }
+  elsif ( $params{region} && !exists( $REGIONS{$params{region}} ) ) {
+    carp( "Unknown region: $params{region}; using $DEF_REGION...")
   }
   ### Exit: (caller(0))[3]
   return bless($self, $class);
@@ -255,6 +256,7 @@ sub post {
 sub _handleRepeatedOptions {
   ### Enter: (caller(0))[3]
   my( $self ) = shift;
+  return undef;
   my( $repeat, %params ) = @_;
   #### %params
 
@@ -270,6 +272,31 @@ sub _handleRepeatedOptions {
   #### %params
   ### Exit: (caller(0))[3]
   return %params;
+}
+
+# most of the calls can do this
+sub _genericCallHandler {
+  ### Enter: (caller(0))[3]
+  my( $op ) = pop( [ split( /::/, (caller(1))[3] ) ] );
+  ### Operation: $op
+  my( $self )        = shift;
+  my %params         = validate( @_, $API_SPEC{$op} );
+  $params{Operation} = $op;
+  ### %params
+  
+  # handle ARRAY / repeated options
+  foreach my $opt ( keys( %{ $API_SPEC{$op} } ) ) {
+    ### Checking opt: $opt
+    if ( $API_SPEC{$op}->{$opt}->{type} == ARRAYREF ) {
+      ### Found a repeatable option: $opt
+      ( %params ) = $self->_handleRepeatedOptions( $opt, %params );       
+    }
+  }
+  
+  ### %params
+  my( $rez ) = $self->get( params => \%params );
+  ### Exit: (caller(0))[3]
+  return $rez->{"${op}Result"};
 }
 
 # #################################################################################################
@@ -299,20 +326,13 @@ The prefix used when this CNAME is reserved.
 
 =cut
 
-Readonly my %dns_spec => ( CNAMEPrefix => { type => SCALAR, regex => qr/^[A-Z0-9_-]{4,63}$/i, } );
+$API_SPEC{'CheckDNSAvailability'} = { CNAMEPrefix => { type => SCALAR, regex => qr/^[A-Z0-9_-]{4,63}$/i, } };
 
 sub CheckDNSAvailability {
   ### Enter: (caller(0))[3]
-  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
-  ### Operation = $op
-  my( $self )        = shift;
-  my %params         = validate( @_, \%dns_spec );
-  $params{Operation} = $op;
-  
-  ### %params
-  my( $rez ) = $self->get( params => \%params );
+  my( $self ) = shift;
   ### Exit: (caller(0))[3]
-  return $rez->{"${op}Result"};
+  return $self->_genericCallHandler( @_ );
 }
 
 # CreateApplication
@@ -351,25 +371,15 @@ If specified, AWS Elastic Beanstalk restricts the returned versions to only incl
 
 =cut
 
-Readonly my %dav_spec => ( ApplicationName => { type => SCALAR,   regex    => qr/^[A-Z0-9_-]{4,63}$/i, },
-                           VersionLabels   => { type => ARRAYREF, optional => 1 },
-                          );
+$API_SPEC{'DescribeApplicationVersions'} = { ApplicationName => { type => SCALAR,   regex    => qr/^[A-Z0-9_-]{4,63}$/i, },
+                                             VersionLabels   => { type => ARRAYREF, optional => 1 },
+                                           };
 
 sub DescribeApplicationVersions {
   ### Enter: (caller(0))[3]
-  my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
-  ### Operation = $op
-  my( $self )        = shift;
-  my %params         = validate( @_, \%dav_spec );
-  $params{Operation} = $op
-  ### %params
-  
-  ( %params ) = $self->_handleRepeatedOptions( 'VersionLabels', %params );
-  
-  ### %params
-  my( $rez ) = $self->get( params => \%params );
+  my( $self ) = shift;
   ### Exit: (caller(0))[3]
-  return $rez->{"${op}Result"};
+  return $self->_genericCallHandler( @_ );
 }
 
 # DescribeApplications
@@ -394,14 +404,14 @@ If specified, AWS Elastic Beanstalk restricts the returned descriptions to only 
 
 =cut
 
-Readonly my %da_spec => ( ApplicationNames => { type => ARRAYREF, optional => 1 } );
+$API_SPEC{'DescribeApplications'} = { ApplicationNames => { type => ARRAYREF, optional => 1 } };
                           
 sub DescribeApplications {
   ### Enter: (caller(0))[3]
   my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
   ### Operation = $op
   my( $self )        = shift;
-  my %params         = validate( @_, \%da_spec );
+  my %params         = validate( @_, $API_SPEC{$op} );
   $params{Operation} = $op;
   ### %params
   
@@ -465,7 +475,7 @@ sub DescribeConfigurationOptions {
   my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
   ### Operation = $op
   my( $self )        = shift;
-  my %params         = validate( @_, \%da_spec );
+  my %params         = validate( @_, \%dco_spec );
   $params{Operation} = $op;
   ### %params
   
@@ -570,7 +580,7 @@ sub DescribeEnvironmentResources {
   my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
   ### Operation = $op
   my( $self )        = shift;
-  my %params         = validate( @_, \%da_spec );
+  my %params         = validate( @_, \%der_spec );
   $params{Operation} = $op;
   ### %params
   
@@ -684,7 +694,7 @@ sub DescribeEvents {
   my( $op ) = pop( [ split( /::/, (caller(0))[3] ) ] );
   ### Operation = $op
   my( $self )        = shift;
-  my %params         = validate( @_, \%da_spec );
+  my %params         = validate( @_, \%dev_spec );
   $params{Operation} = $op;
   ### %params
   
@@ -795,6 +805,14 @@ sub ValidateConfigurationSettings {
   $params{Operation} = $op;
   ### %params
 
+  if ( !exists( $params{'EnvironmentName'} ) && !exists( $params{'TemplateName'} ) ) {
+    croak( "Provide one of EnvironmentName or TemplateName" );
+  }
+  
+  if ( exists( $params{'EnvironmentName'} ) && exists( $params{'TemplateName'} ) ) {
+    croak( "Provide only one of EnvironmentName or TemplateName" );
+  }
+  
   # handle ARRAY / repeated options
   ( %params ) = $self->_handleRepeatedOptions( 'OptionSettings', %params );
 
