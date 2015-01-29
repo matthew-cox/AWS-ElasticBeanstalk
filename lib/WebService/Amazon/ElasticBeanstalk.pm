@@ -13,7 +13,7 @@ use HTTP::Request::Common;
 use LWP;
 use Params::Validate qw( :all );
 use Readonly;
-use Smart::Comments '###';
+#use Smart::Comments '###';
 #use Smart::Comments '###', '####';
 #use Smart::Comments '###', '####', '#####';
 require XML::Simple;
@@ -37,7 +37,7 @@ our $VERSION = version->declare("v0.0.1");
 
 This module provides a Perl wrapper around Amazon's 
 ( L<http://aws.amazon.com> ) ElasticBeanstalk API.  You will need 
-to be an AWS customer wiht an ID and Secret with access
+to be an AWS customer with an ID and Secret with access
 to Elastic Beanstalk.
 
 B<Note:> Some parameter validation is purposely lax. The API will 
@@ -59,7 +59,7 @@ Readonly our %REGIONS => ( 'us-east-1'      => 'https://elasticbeanstalk.us-east
                            'sa-east-1'      => 'https://elasticbeanstalk.sa-east-1.amazonaws.com'
                            );
 
-# Global API Version
+# Global API Version and Default Region
 Readonly our $API_VERSION => '2010-12-01';
 Readonly our $DEF_REGION  => 'us-east-1';
 
@@ -324,7 +324,7 @@ Refer to L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_C
 
 The prefix used when this CNAME is reserved.
 
-=item B<Returns: XML result from API>
+=item B<Returns: result from API call>
 
 =back
 
@@ -370,7 +370,7 @@ If specified, AWS Elastic Beanstalk restricts the returned descriptions to only 
 
 If specified, AWS Elastic Beanstalk restricts the returned versions to only include those with the specified names.
 
-=item B<Returns: XML result from API>
+=item B<Returns: result from API call>
 
 =back
 
@@ -404,7 +404,7 @@ Refer to L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_D
 
 If specified, AWS Elastic Beanstalk restricts the returned descriptions to only include those with the specified names.
 
-=item B<Returns: XML result from API>
+=item B<Returns: result from API call>
 
 =back
 
@@ -452,7 +452,7 @@ The name of the solution stack whose configuration options you want to describe.
 
 The name of the configuration template whose configuration options you want to describe.
 
-=item B<Returns: XML result from API>
+=item B<Returns: result from API call>
 
 =back
 
@@ -501,7 +501,7 @@ The name of the configuration template to describe.
 
 Conditional: You must specify either this parameter or an EnvironmentName, but not both. If you specify both, AWS Elastic Beanstalk returns an InvalidParameterCombination error. If you do not specify either, AWS Elastic Beanstalk returns a MissingRequiredParameter error.
 
-=item B<Returns: XML result from API>
+=item B<Returns: result from API call>
 
 =back
 
@@ -552,7 +552,7 @@ Refer to L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_D
 
 If specified, AWS Elastic Beanstalk restricts the returned descriptions to only include those with the specified names.
 
-=item B<Returns: XML result from API>
+=item B<Returns: result from API call>
 
 =back
 
@@ -607,7 +607,7 @@ If specified when IncludeDeleted is set to true, then environments deleted after
 
 If specified, AWS Elastic Beanstalk restricts the returned descriptions to include only those that are associated with this application version.
 
-=item B<Returns: XML result from API>
+=item B<Returns: result from API call>
 
 =back
 
@@ -645,7 +645,7 @@ Refer to L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_D
 
 If specified, AWS Elastic Beanstalk restricts the returned descriptions to only include those with the specified names.
 
-=item B<Returns: XML result from API>
+=item B<Returns: result from API call>
 
 =back
 
@@ -675,7 +675,7 @@ Refer to L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_L
 
 B<none>
 
-=item B<Returns: XML result from API>
+=item B<Returns: result from API call>
 
 =back
 
@@ -693,12 +693,97 @@ sub ListAvailableSolutionStacks {
 # RebuildEnvironment
 # RequestEnvironmentInfo
 # RestartAppServer
+
+# #################################################################################################
 # RetrieveEnvironmentInfo
+
+=head2 RetrieveEnvironmentInfo( )
+
+Retrieves the compiled information from a RequestEnvironmentInfo request.
+
+Refer to L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_RetrieveEnvironmentInfo.html>
+
+=over 4
+
+=item B<Parameters>
+
+=item EnvironmentId I<(optional string)>
+
+The ID of the data's environment.
+
+If no such environment is found, returns an InvalidParameterValue error.
+
+Condition: You must specify either this or an EnvironmentName, or both. If you do not specify either, AWS Elastic Beanstalk returns MissingRequiredParameter error.
+
+=item EnvironmentName I<(optional string)>
+
+The name of the data's environment.
+
+If no such environment is found, returns an InvalidParameterValue error.
+
+Condition: You must specify either this or an EnvironmentId, or both. If you do not specify either, AWS Elastic Beanstalk returns MissingRequiredParameter error.
+
+Type: String
+
+Length constraints: Minimum length of 4. Maximum length of 23.
+
+Required: No
+
+=item InfoType B<(required string)>
+
+The type of information to retrieve.
+
+Type: String
+
+Valid Values: tail
+
+Required: Yes
+
+=item B<Returns: result from API call>
+
+=back
+
+=cut
+
+$API_SPEC{'RetrieveEnvironmentInfo'} = { InfoType => { type => SCALAR, optional => 1, default => 'tail',
+                                                       callbacks => {
+                                                          'other_params' => sub { 
+                                                            my( $me, $others ) = @_;
+                                                            if ( !$others->{'EnvironmentId'} && !$others->{'EnvironmentName'} ) {
+                                                              croak( "Provide one of EnvironmentId or EnvironmentName" );
+                                                              return 0;
+                                                            }
+                                                            return 1;
+                                                          }
+                                                        }
+                                                      },
+                                          EnvironmentId   => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
+                                          EnvironmentName => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
+                                       };
+
+sub RetrieveEnvironmentInfo {
+  ### Enter: (caller(0))[3]
+  my( $rez ) = _genericCallHandler( @_ );
+  ### Exit: (caller(0))[3]
+  return $rez;
+}
+
+# #################################################################################################
 # SwapEnvironmentCNAMEs
+
+# #################################################################################################
 # TerminateEnvironment
+
+# #################################################################################################
 # UpdateApplication
+
+# #################################################################################################
 # UpdateApplicationVersion
+
+# #################################################################################################
 # UpdateConfigurationTemplate
+
+# #################################################################################################
 # UpdateEnvironment
 
 # #################################################################################################
@@ -716,7 +801,7 @@ Refer to L<http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_V
 
 =item B<Parameters>
 
-=item ApplicationName B<(require string)>
+=item ApplicationName B<(required string)>
 
 The name of the application that the configuration template or environment belongs to.
 
@@ -736,7 +821,7 @@ The name of the configuration template to validate the settings against.
 
 Condition: You cannot specify both this and an environment name.
 
-=item B<Returns: XML result from API>
+=item B<Returns: result from API call>
 
 =back
 
@@ -771,78 +856,9 @@ sub ValidateConfigurationSettings {
   return $rez;
 }
 
-
-=head2 fileDelete(I<%params>)
-
-Removes the file from Smartling. The file will no longer be available 
-for download. Any complete translations for the file remain available 
-for use within the system.
-
-Smartling deletes files asynchronously and it typically takes a few 
-minutes to complete. While deleting a file, you can not upload a file 
-with the same fileUri.
-
-Refer to 
-L<https://docs.smartling.com/display/docs/Files+API#FilesAPI-/file/delete%28DELETE%29>
-
-=cut
-
-#my( %file_delete_spec ) = ( fileUri => $ALL_SPECS{fileUri} );
-
-=over 4
-
-=item B<Parameters>
-
-=item fileUri B<(required)>
-
-Value that uniquely identifies the file.
-
-=item B<Returns: JSON result from API>
-
-=over 4
-
- {"response":{"code":"SUCCESS","messages":[],"data":null,}}
-
-=back
-
-=back
-
-=cut
-
-# sub fileDelete {
-#   my $self = shift();
-#
-#   # validate
-#   my %params = validate( @_, \%file_delete_spec );
-#
-#   # This code is essentially a simplified duplication of WebService::Simple->get
-#   # with the HTTP method changed to delete
-#   my $uri = $self->request_url(
-#       url        => $self->base_url,
-#       extra_path => "file/delete",
-#       params     => { %{ $self->basic_params }, %params }
-#   );
-#
-#   warn "Request URL is $uri$/" if $self->{debug};
-#
-#   my @headers = @_;
-#
-#   my $response = $self->SUPER::delete( $uri, @headers );
-#   if ( !$response->is_success ) {
-#       Carp::croak("request to $uri failed");
-#   }
-#
-#   $response = WebService::Simple::Response->new_from_response(
-#       response => $response,
-#       parser   => $self->response_parser
-#   );
-#
-#   return $response->parse_response;
-# }
-
 =head1 AUTHOR
 
-Matthew Cox, C<< <mcox at cpan.org> >>
+Matthew Cox C<< <mcox at cpan.org> >>
 
 =head1 BUGS
 
@@ -855,7 +871,6 @@ automatically be notified of progress on your bug as I make changes.
 You can find documentation for this module with the perldoc command.
 
     perldoc WebService::Amazon::ElasticBeanstalk
-
 
 You can also look for information at:
 

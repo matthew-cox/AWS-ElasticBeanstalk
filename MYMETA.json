@@ -1,10 +1,10 @@
 {
-   "abstract" : "The great new WebService::Smartling!",
+   "abstract" : "Basic interface to Amazon ElasticBeanstalk",
    "author" : [
-      "Matthew Cox, C<< <mcox at cpan.org> >>"
+      "Matthew Cox C<< <mcox at cpan.org> >>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Module::Install version 1.06, CPAN::Meta::Converter version 2.143240",
+   "generated_by" : "ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.143240",
    "license" : [
       "artistic_1"
    ],
@@ -12,11 +12,11 @@
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
       "version" : "2"
    },
-   "name" : "WebService-Smartling",
+   "name" : "WebService-Amazon-ElasticBeanstalk",
    "no_index" : {
       "directory" : [
-         "inc",
-         "t"
+         "t",
+         "inc"
       ]
    },
    "prereqs" : {
@@ -27,7 +27,7 @@
       },
       "configure" : {
          "requires" : {
-            "ExtUtils::MakeMaker" : "6.59"
+            "ExtUtils::MakeMaker" : "0"
          }
       },
       "runtime" : {
@@ -44,10 +44,5 @@
       }
    },
    "release_status" : "stable",
-   "resources" : {
-      "license" : [
-         "http://opensource.org/licenses/artistic-license.php"
-      ]
-   },
-   "version" : "0.000004"
+   "version" : "v0.0.1"
 }
