@@ -3,12 +3,13 @@ NAME
     ElasticBeanstalk
 
 VERSION
-    Version 0.0.1
+    Version 0.0.4
 
 SYNOPSIS
     This module provides a Perl wrapper around Amazon's (
-    http://aws.amazon.com ) ElasticBeanstalk API. You will need to be an AWS
-    customer with an ID and Secret with access to Elastic Beanstalk.
+    <http://aws.amazon.com> ) ElasticBeanstalk API. You will need to be an
+    AWS customer with an ID and Secret which has been provided access to
+    Elastic Beanstalk.
 
     Note: Some parameter validation is purposely lax. The API will generally
     fail when invalid params are passed. The errors may not be helpful.
@@ -26,38 +27,38 @@ INTERFACE
     Parameters
     id (required)
         You can find more information in the AWS docs:
-        http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/Comm
-        onParameters.html
+        <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/Com
+        monParameters.html>
 
     region *(optional)* - defaults to us-east-1
         You can find available regions at:
-        http://docs.aws.amazon.com/general/latest/gr/rande.html#elasticbeans
-        talk_region
+        <http://docs.aws.amazon.com/general/latest/gr/rande.html#elasticbean
+        stalk_region>
 
     secret (required)
         You can find more information in the AWS docs:
-        http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/Comm
-        onParameters.html
+        <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/Com
+        monParameters.html>
 
   CheckDNSAvailability( CNAMEPrefix => 'the-thing-to-check' )
     Returns a list of the available solution stack names.
 
     Refer to
-    http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Chec
-    kDNSAvailability.html
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Che
+    ckDNSAvailability.html>
 
     Parameters
     CNAMEPrefix (required scalar)
         The prefix used when this CNAME is reserved.
 
-    Returns: XML result from API
+    Returns: result from API call
 
   DescribeApplicationVersions( )
     Returns a list of the available solution stack names.
 
     Refer to
-    http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Desc
-    ribeApplicationVersions.html
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Des
+    cribeApplicationVersions.html>
 
     Parameters
     ApplicationName *(optional scalar)*
@@ -69,28 +70,28 @@ INTERFACE
         If specified, AWS Elastic Beanstalk restricts the returned versions
         to only include those with the specified names.
 
-    Returns: XML result from API
+    Returns: result from API call
 
   DescribeApplications( )
     Returns a list of the available solution stack names.
 
     Refer to
-    http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Desc
-    ribeApplications.html
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Des
+    cribeApplications.html>
 
     Parameters
     ApplicationNames *(optional array)*
         If specified, AWS Elastic Beanstalk restricts the returned
         descriptions to only include those with the specified names.
 
-    Returns: XML result from API
+    Returns: result from API call
 
   DescribeConfigurationOptions( )
     Returns a list of the available solution stack names.
 
     Refer to
-    http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Desc
-    ribeConfigurationOptions.html
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Des
+    cribeConfigurationOptions.html>
 
     Parameters
     ApplicationName *(optional string)*
@@ -115,14 +116,14 @@ INTERFACE
         The name of the configuration template whose configuration options
         you want to describe.
 
-    Returns: XML result from API
+    Returns: result from API call
 
   DescribeConfigurationSettings( )
     Returns a list of the available solution stack names.
 
     Refer to
-    http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Desc
-    ribeConfigurationSettings.html
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Des
+    cribeConfigurationSettings.html>
 
     Parameters
     ApplicationName (required string)
@@ -145,28 +146,28 @@ INTERFACE
         not specify either, AWS Elastic Beanstalk returns a
         MissingRequiredParameter error.
 
-    Returns: XML result from API
+    Returns: result from API call
 
   DescribeEnvironmentResources( )
     Returns a list of the available solution stack names.
 
     Refer to
-    http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Desc
-    ribeApplications.html
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Des
+    cribeApplications.html>
 
     Parameters
     ApplicationNames *(optional array)*
         If specified, AWS Elastic Beanstalk restricts the returned
         descriptions to only include those with the specified names.
 
-    Returns: XML result from API
+    Returns: result from API call
 
   DescribeEnvironments( )
     Returns a list of the available solution stack names.
 
     Refer to
-    http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Desc
-    ribeEnvironments.html
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Des
+    cribeEnvironments.html>
 
     Parameters
     ApplicationName *(optional string)*
@@ -198,42 +199,42 @@ INTERFACE
         descriptions to include only those that are associated with this
         application version.
 
-    Returns: XML result from API
+    Returns: result from API call
 
   DescribeEvents( )
     Returns list of event descriptions matching criteria up to the last 6
     weeks.
 
     Refer to
-    http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Desc
-    ribeEvents.html
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Des
+    cribeEvents.html>
 
     Parameters
     ApplicationNames *(optional array)*
         If specified, AWS Elastic Beanstalk restricts the returned
         descriptions to only include those with the specified names.
 
-    Returns: XML result from API
+    Returns: result from API call
 
   ListAvailableSolutionStacks( )
     Returns a list of the available solution stack names.
 
     Refer to
-    http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_List
-    AvailableSolutionStacks.html
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Lis
+    tAvailableSolutionStacks.html>
 
     Parameters
         none
 
-    Returns: XML result from API
+    Returns: result from API call
 
   RetrieveEnvironmentInfo( )
     Retrieves the compiled information from a RequestEnvironmentInfo
     request.
 
     Refer to
-    http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Retr
-    ieveEnvironmentInfo.html
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Ret
+    rieveEnvironmentInfo.html>
 
     Parameters
     EnvironmentId *(optional string)*
@@ -271,7 +272,7 @@ INTERFACE
 
         Required: Yes
 
-    Returns: XML result from API
+    Returns: result from API call
 
   ValidateConfigurationSettings( )
     Takes a set of configuration settings and either a configuration
@@ -281,8 +282,8 @@ INTERFACE
     associated with the selection of option values.
 
     Refer to
-    http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Vali
-    dateConfigurationSettings.html
+    <http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API_Val
+    idateConfigurationSettings.html>
 
     Parameters
     ApplicationName (required string)
@@ -304,18 +305,18 @@ INTERFACE
 
         Condition: You cannot specify both this and an environment name.
 
-    Returns: XML result from API
+    Returns: result from API call
 
 AUTHOR
-    Matthew Cox `<mcox at cpan.org>'
+    Matthew Cox "<mcox at cpan.org>"
 
 BUGS
     Please report any bugs or feature requests to
-    `bug-webservice-amazon-elasticbeanstalk at rt.cpan.org', or through the
+    "bug-webservice-amazon-elasticbeanstalk at rt.cpan.org", or through the
     web interface at
-    http://rt.cpan.org/NoAuth/ReportBug.html?Queue=WebService-Amazon-Elastic
-    Beanstalk. I will be notified, and then you'll automatically be notified
-    of progress on your bug as I make changes.
+    <http://rt.cpan.org/NoAuth/ReportBug.html?Queue=WebService-Amazon-Elasti
+    cBeanstalk>. I will be notified, and then you'll automatically be
+    notified of progress on your bug as I make changes.
 
 SUPPORT
     You can find documentation for this module with the perldoc command.
@@ -324,18 +325,22 @@ SUPPORT
 
     You can also look for information at:
 
-    * RT: CPAN's request tracker (report bugs here)
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=WebService-Amazon-ElasticBe
-        anstalk
+    *   RT: CPAN's request tracker (report bugs here)
 
-    * AnnoCPAN: Annotated CPAN documentation
-        http://annocpan.org/dist/WebService-Amazon-ElasticBeanstalk
+        <http://rt.cpan.org/NoAuth/Bugs.html?Dist=WebService-Amazon-ElasticB
+        eanstalk>
 
-    * CPAN Ratings
-        http://cpanratings.perl.org/d/WebService-Amazon-ElasticBeanstalk
+    *   AnnoCPAN: Annotated CPAN documentation
 
-    * Search CPAN
-        http://search.cpan.org/dist/WebService-Amazon-ElasticBeanstalk/
+        <http://annocpan.org/dist/WebService-Amazon-ElasticBeanstalk>
+
+    *   CPAN Ratings
+
+        <http://cpanratings.perl.org/d/WebService-Amazon-ElasticBeanstalk>
+
+    *   Search CPAN
+
+        <http://search.cpan.org/dist/WebService-Amazon-ElasticBeanstalk/>
 
 SEE ALSO
     perl(1), WebService::Simple, XML::Simple, HTTP::Common::Response
@@ -347,7 +352,7 @@ LICENSE AND COPYRIGHT
     under the terms of the the Artistic License (2.0). You may obtain a copy
     of the full license at:
 
-    http://www.perlfoundation.org/artistic_license_2_0
+    <http://www.perlfoundation.org/artistic_license_2_0>
 
     Any use, modification, and distribution of the Standard or Modified
     Versions is governed by this Artistic License. By using, modifying or

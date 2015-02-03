@@ -26,19 +26,19 @@ WebService::Amazon::ElasticBeanstalk - Basic interface to Amazon ElasticBeanstal
 
 =head1 VERSION
 
-Version 0.0.1
+Version 0.0.4
 
 =cut
 
 use version;
-our $VERSION = version->declare("v0.0.1");
+our $VERSION = version->declare("v0.0.4");
 
 =head1 SYNOPSIS
 
 This module provides a Perl wrapper around Amazon's 
 ( L<http://aws.amazon.com> ) ElasticBeanstalk API.  You will need 
-to be an AWS customer with an ID and Secret with access
-to Elastic Beanstalk.
+to be an AWS customer with an ID and Secret which has been provided 
+access to Elastic Beanstalk.
 
 B<Note:> Some parameter validation is purposely lax. The API will 
 generally fail when invalid params are passed. The errors may not 
@@ -376,7 +376,7 @@ If specified, AWS Elastic Beanstalk restricts the returned versions to only incl
 
 =cut
 
-$API_SPEC{'DescribeApplicationVersions'} = { ApplicationName => { type => SCALAR,   regex    => qr/^[A-Z0-9_-]{4,63}$/i, },
+$API_SPEC{'DescribeApplicationVersions'} = { ApplicationName => { type => SCALAR,   optional => 1, regex => qr/^[A-Z0-9_-]{4,63}$/i, },
                                              VersionLabels   => { type => ARRAYREF, optional => 1 },
                                            };
 

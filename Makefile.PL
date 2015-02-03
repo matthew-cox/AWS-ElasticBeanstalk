@@ -13,4 +13,4 @@ requires 'version';
 requires 'WebService::Simple';
 requires 'Xml::Simple';
 
-WriteAll;
+WriteAll( meta => 1 );

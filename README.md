@@ -4,14 +4,14 @@ WebService::Amazon::ElasticBeanstalk - Basic interface to Amazon ElasticBeanstal
 
 # VERSION
 
-Version 0.0.1
+Version 0.0.4
 
 # SYNOPSIS
 
 This module provides a Perl wrapper around Amazon's 
 ( [http://aws.amazon.com](http://aws.amazon.com) ) ElasticBeanstalk API.  You will need 
-to be an AWS customer with an ID and Secret with access
-to Elastic Beanstalk.
+to be an AWS customer with an ID and Secret which has been provided 
+access to Elastic Beanstalk.
 
 **Note:** Some parameter validation is purposely lax. The API will 
 generally fail when invalid params are passed. The errors may not 
