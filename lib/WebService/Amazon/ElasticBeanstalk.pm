@@ -184,7 +184,7 @@ sub new {
 }
 
 # override parent get to perform the required AWS signatures
-sub get {
+sub _get {
   ### Enter: (caller(0))[3]
   my( $self ) = shift;
   my( %args ) = @_;
@@ -198,7 +198,7 @@ sub get {
 
   ### %args
   if ( !$args{params} ) {
-    carp( "No paramerter provided for request!" );
+    carp( "No parameter provided for request!" );
     return undef;
   }
   else {
@@ -211,7 +211,7 @@ sub get {
 
   my $url = $signer->signed_url($uri); # This gives a signed URL that can be fetched by a browser
   #### $url
-  # This doesn't quite work (it wants path and args onyl)
+  # This doesn't quite work (it wants path and args only)
   #my $response = $self->SUPER::get( $url ); 
   my $response = $ua->get($url);
   ##### $response
@@ -228,7 +228,7 @@ sub get {
 }
 
 # override parent post to perform the required AWS signatures
-sub post {
+sub _post {
   my( $self, %args ) = @_;
   
   my $signer = AWS::Signature4->new( -access_key => $self->{basic_params}{id},
@@ -293,7 +293,7 @@ sub _genericCallHandler {
   }
   
   ### %params
-  my( $rez ) = $self->get( params => \%params );
+  my( $rez ) = $self->_get( params => \%params );
   ### Exit: (caller(0))[3]
   return $rez->{"${op}Result"};
 }
