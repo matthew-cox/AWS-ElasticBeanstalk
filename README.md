@@ -4,7 +4,7 @@ WebService::Amazon::ElasticBeanstalk - Basic interface to Amazon ElasticBeanstal
 
 # VERSION
 
-Version 0.0.4
+Version 0.0.5
 
 # SYNOPSIS
 
