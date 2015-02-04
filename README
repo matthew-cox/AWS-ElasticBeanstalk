@@ -3,7 +3,7 @@ NAME
     ElasticBeanstalk
 
 VERSION
-    Version 0.0.5
+    Version 0.0.6
 
 SYNOPSIS
     This module provides a Perl wrapper around Amazon's (
