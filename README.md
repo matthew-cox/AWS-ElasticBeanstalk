@@ -4,7 +4,7 @@ WebService::Amazon::ElasticBeanstalk - Basic interface to Amazon ElasticBeanstal
 
 # VERSION
 
-Version 0.0.6
+Version 0.0.7
 
 # SYNOPSIS
 
@@ -57,6 +57,42 @@ Refer to [http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API\_C
     The prefix used when this CNAME is reserved.
 
 - **Returns: result from API call**
+
+## CreateApplication( )
+
+    Unimplimented (for now)
+
+## CreateApplicationVersion( )
+
+    Unimplimented (for now)
+
+## CreateConfigurationTemplate( )
+
+    Unimplimented (for now)
+
+## CreateEnvironment( )
+
+    Unimplimented (for now)
+
+## CreateStorageLocation( )
+
+    Unimplimented (for now)
+
+## DeleteApplication( )
+
+    Unimplimented (for now)
+
+## DeleteApplicationVersion( )
+
+    Unimplimented (for now)
+
+## DeleteConfigurationTemplate( )
+
+    Unimplimented (for now)
+
+## DeleteEnvironmentConfiguration( )
+
+    Unimplimented (for now)
 
 ## DescribeApplicationVersions( )
 
@@ -216,6 +252,18 @@ Refer to [http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API\_L
 
 - **Returns: result from API call**
 
+## RebuildEnvironment( )
+
+    Unimplimented (for now)
+
+## RequestEnvironmentInfo( )
+
+    Unimplimented (for now)
+
+## RestartAppServer( )
+
+    Unimplimented (for now)
+
 ## RetrieveEnvironmentInfo( )
 
 Retrieves the compiled information from a RequestEnvironmentInfo request.
@@ -256,6 +304,30 @@ Refer to [http://docs.aws.amazon.com/elasticbeanstalk/latest/APIReference/API\_R
     Required: Yes
 
 - **Returns: result from API call**
+
+## SwapEnvironmentCNAMEs( )
+
+    Unimplimented (for now)
+
+## TerminateEnvironment( )
+
+    Unimplimented (for now)
+
+## UpdateApplication( )
+
+    Unimplimented (for now)
+
+## UpdateApplicationVersion( )
+
+    Unimplimented (for now)
+
+## UpdateConfigurationTemplate( )
+
+    Unimplimented (for now)
+
+## UpdateEnvironment( )
+
+    Unimplimented (for now)
 
 ## ValidateConfigurationSettings( )
 

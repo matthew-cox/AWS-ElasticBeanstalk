@@ -26,12 +26,12 @@ WebService::Amazon::ElasticBeanstalk - Basic interface to Amazon ElasticBeanstal
 
 =head1 VERSION
 
-Version 0.0.6
+Version 0.0.7
 
 =cut
 
 use version;
-our $VERSION = version->declare("v0.0.6");
+our $VERSION = version->declare("v0.0.7");
 
 =head1 SYNOPSIS
 
@@ -48,16 +48,17 @@ be helpful.
 
 # From: http://docs.aws.amazon.com/general/latest/gr/rande.html#elasticbeanstalk_region
 # FIXME: use an array and assemble the URL in the constructor?
-Readonly our %REGIONS => ( 'us-east-1'      => 'https://elasticbeanstalk.us-east-1.amazonaws.com',
-                           'us-west-1'      => 'https://elasticbeanstalk.us-west-1.amazonaws.com',
-                           'us-west-2'      => 'https://elasticbeanstalk.us-west-2.amazonaws.com',
-                           'eu-west-1'      => 'https://elasticbeanstalk.eu-west-1.amazonaws.com',
-                           'eu-central-1'   => 'https://elasticbeanstalk.eu-central-1.amazonaws.com',
-                           'ap-southeast-1' => 'https://elasticbeanstalk.ap-southeast-1.amazonaws.com',
-                           'ap-southeast-2' => 'https://elasticbeanstalk.ap-southeast-2.amazonaws.com',
-                           'ap-northeast-1' => 'https://elasticbeanstalk.ap-northeast-1.amazonaws.com',
-                           'sa-east-1'      => 'https://elasticbeanstalk.sa-east-1.amazonaws.com'
-                           );
+Readonly our %REGIONS => (
+ 'us-east-1'      => 'https://elasticbeanstalk.us-east-1.amazonaws.com',
+ 'us-west-1'      => 'https://elasticbeanstalk.us-west-1.amazonaws.com',
+ 'us-west-2'      => 'https://elasticbeanstalk.us-west-2.amazonaws.com',
+ 'eu-west-1'      => 'https://elasticbeanstalk.eu-west-1.amazonaws.com',
+ 'eu-central-1'   => 'https://elasticbeanstalk.eu-central-1.amazonaws.com',
+ 'ap-southeast-1' => 'https://elasticbeanstalk.ap-southeast-1.amazonaws.com',
+ 'ap-southeast-2' => 'https://elasticbeanstalk.ap-southeast-2.amazonaws.com',
+ 'ap-northeast-1' => 'https://elasticbeanstalk.ap-northeast-1.amazonaws.com',
+ 'sa-east-1'      => 'https://elasticbeanstalk.sa-east-1.amazonaws.com'
+);
 
 # Global API Version and Default Region
 Readonly our $API_VERSION => '2010-12-01';
@@ -90,9 +91,9 @@ Inherited from L<WebService::Simple>, and takes all the same arguments.
 You B<must> provide the Amazon required arguments of B<id>, and B<secret> 
 in the param hash:
 
- my $ebn = WebService::Amazon::ElasticBeanstalk->new( param => { id     => $AWS_ACCESS_KEY_ID,
-                                                                 region => 'us-east-1',
-                                                                 secret => $AWS_ACCESS_KEY_SECRET } );
+   my $ebn = WebService::Amazon::ElasticBeanstalk->new( param => { id     => $AWS_ACCESS_KEY_ID,
+                                                                   region => 'us-east-1',
+                                                                   secret => $AWS_ACCESS_KEY_SECRET } );
 
 =over 4
 
@@ -161,16 +162,23 @@ sub new {
   my( $class, %args ) = @_;
   my $self = $class->SUPER::new(%args);
   
+  # this is silly, but easier for validation
+  my( @temp_params ) = %{ $self->{basic_params} };
+  my %params = validate( @temp_params, $API_SPEC{'new'} );
+  ##### %params
+  
   # set our API version
   $self->{api_version} = $API_VERSION;
   
   # for parsing the responses
   $self->{xs} = XML::Simple->new();
   
-  # this is silly, but easier for validation
-  my( @temp_params ) = %{ $self->{basic_params} };
-  my %params = validate( @temp_params, $API_SPEC{'new'} );
-  ##### %params
+  # store a request signer for later
+  $self->{signer} = AWS::Signature4->new( -access_key => $self->{basic_params}{id},
+                                          -secret_key => $self->{basic_params}{secret} );
+
+  # store a user agent for later
+  $self->{ua} = LWP::UserAgent->new( agent => "$class/$VERSION" );
   
   # change the endpoint for the requested region
   if ( $params{region} && $REGIONS{$params{region}} ) {
@@ -191,10 +199,6 @@ sub _get {
   #my $self = $class->SUPER::new(%args);
   
   ##### $self
-  my $signer = AWS::Signature4->new( -access_key => $self->{basic_params}{id},
-                                     -secret_key => $self->{basic_params}{secret} );
-
-  my $ua = LWP::UserAgent->new();
 
   ### %args
   if ( !$args{params} ) {
@@ -209,18 +213,19 @@ sub _get {
   $uri->query_form( $args{params} );
   #### $uri
 
-  my $url = $signer->signed_url($uri); # This gives a signed URL that can be fetched by a browser
+  # This gives a signed URL that can be fetched by a browser
+  my $url = $self->{signer}->signed_url($uri);
   #### $url
   # This doesn't quite work (it wants path and args only)
   #my $response = $self->SUPER::get( $url ); 
-  my $response = $ua->get($url);
+  my $response = $self->{ua}->get($url);
   ##### $response
   if ( $response->is_success ) {
     ### Exit: (caller(0))[3]
     return $self->{xs}->XMLin( $response->decoded_content );
   }
   else {
-    carp( $response->status_line );
+    carp( join( $/, $response->decoded_content, $response->status_line ) );
     ### Exit: (caller(0))[3]
     return undef;
   }
@@ -228,26 +233,33 @@ sub _get {
 }
 
 # override parent post to perform the required AWS signatures
+# NOTE: unused (API is all GETs)
 sub _post {
   my( $self, %args ) = @_;
-  
-  my $signer = AWS::Signature4->new( -access_key => $self->{basic_params}{id},
-                                     -secret_key => $self->{basic_params}{secret});
-                                    
-  my $ua     = LWP::UserAgent->new();
 
-  # Example POST request
-  my $request = POST('https://iam.amazonaws.com',
-                     [Action=>'ListUsers',
-                      Version=>'2010-05-08']);
-  $signer->sign($request);
-  my $response = $ua->request($request);
+  ### %args
+  if ( !$args{params} ) {
+    carp( "No parameter provided for request!" );
+    return undef;
+  }
+  else {
+    $args{params}{Version} = $self->{api_version};
+  }
+  
+  # set custom HTTP request header fields
+  my $req = HTTP::Request->new( POST => $self->{base_url} );
+  
+  # this is not quite right
+  $req->content( %args );
+  
+  $self->{signer}->sign( $req );
+  my $response = $self->{ua}->request( $req );
   ##### $response
   if ( $response->is_success ) {
      return $self->{xs}->XMLin( $response->decoded_content );
   }
   else {
-    carp( $response->status_line );
+    carp( join( $/, $response->decoded_content, $response->status_line ) );
     return undef;
   }
 }
@@ -276,7 +288,8 @@ sub _handleRepeatedOptions {
 # most of the calls can do this
 sub _genericCallHandler {
   ### Enter: (caller(0))[3]
-  my( $op ) = pop( [ split( /::/, (caller(1))[3] ) ] );
+  my( @st ) = split( /::/, (caller(1))[3] );
+  my( $op ) = pop( @st );
   ### Operation: $op
   my( $self )        = shift;
   my %params         = validate( @_, $API_SPEC{$op} );
@@ -297,11 +310,6 @@ sub _genericCallHandler {
   ### Exit: (caller(0))[3]
   return $rez->{"${op}Result"};
 }
-
-# sub one_of {
-#   my @options = @_;
-#   _bless_right_class(_mk_autodoc(sub { _count_of(\@options, 1)->(@_) }));
-# }
 
 # #################################################################################################
 # 
@@ -330,7 +338,9 @@ The prefix used when this CNAME is reserved.
 
 =cut
 
-$API_SPEC{'CheckDNSAvailability'} = { CNAMEPrefix => { type => SCALAR, regex => qr/^[A-Z0-9_-]{4,63}$/i, } };
+$API_SPEC{'CheckDNSAvailability'} = {
+  CNAMEPrefix => { type => SCALAR, regex => qr/^[A-Z0-9_-]{4,63}$/i, }
+};
 
 sub CheckDNSAvailability {
   ### Enter: (caller(0))[3]
@@ -339,15 +349,86 @@ sub CheckDNSAvailability {
   return $rez;
 }
 
+# #################################################################################################
 # CreateApplication
+
+=head2 CreateApplication( )
+
+   Unimplimented (for now)
+
+=cut
+
+# #################################################################################################
 # CreateApplicationVersion
+
+=head2 CreateApplicationVersion( )
+
+   Unimplimented (for now)
+
+=cut
+
+# #################################################################################################
 # CreateConfigurationTemplate
+
+=head2 CreateConfigurationTemplate( )
+
+   Unimplimented (for now)
+
+=cut
+
+# #################################################################################################
 # CreateEnvironment
+
+=head2 CreateEnvironment( )
+
+   Unimplimented (for now)
+
+=cut
+
+# #################################################################################################
 # CreateStorageLocation
+
+=head2 CreateStorageLocation( )
+
+   Unimplimented (for now)
+
+=cut
+
+# #################################################################################################
 # DeleteApplication
+
+=head2 DeleteApplication( )
+
+   Unimplimented (for now)
+
+=cut
+
+# #################################################################################################
 # DeleteApplicationVersion
+
+=head2 DeleteApplicationVersion( )
+
+   Unimplimented (for now)
+
+=cut
+
+# #################################################################################################
 # DeleteConfigurationTemplate
+
+=head2 DeleteConfigurationTemplate( )
+
+   Unimplimented (for now)
+
+=cut
+
+# #################################################################################################
 # DeleteEnvironmentConfiguration
+
+=head2 DeleteEnvironmentConfiguration( )
+
+   Unimplimented (for now)
+
+=cut
 
 # #################################################################################################
 # DescribeApplicationVersions
@@ -376,9 +457,10 @@ If specified, AWS Elastic Beanstalk restricts the returned versions to only incl
 
 =cut
 
-$API_SPEC{'DescribeApplicationVersions'} = { ApplicationName => { type => SCALAR,   optional => 1, regex => qr/^[A-Z0-9_-]{4,63}$/i, },
-                                             VersionLabels   => { type => ARRAYREF, optional => 1 },
-                                           };
+$API_SPEC{'DescribeApplicationVersions'} = { 
+  ApplicationName => { type => SCALAR,   optional => 1, regex => qr/^[A-Z0-9_-]{4,63}$/i, },
+  VersionLabels   => { type => ARRAYREF, optional => 1 },
+};
 
 sub DescribeApplicationVersions {
   ### Enter: (caller(0))[3]
@@ -410,7 +492,9 @@ If specified, AWS Elastic Beanstalk restricts the returned descriptions to only 
 
 =cut
 
-$API_SPEC{'DescribeApplications'} = { ApplicationNames => { type => ARRAYREF, optional => 1 } };
+$API_SPEC{'DescribeApplications'} = {
+  ApplicationNames => { type => ARRAYREF, optional => 1 }
+};
                           
 sub DescribeApplications {
   ### Enter: (caller(0))[3]
@@ -458,12 +542,13 @@ The name of the configuration template whose configuration options you want to d
 
 =cut
 
-$API_SPEC{'DescribeConfigurationOptions'} = { ApplicationName   => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i, optional => 1 },
-                                              EnvironmentName   => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{4,23}$/i,  optional => 1 },
-                                              Options           => { type => ARRAYREF, optional => 1 },
-                                              SolutionStackName => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i, optional => 1 },
-                                              TemplateName      => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i, optional => 1 },
-                                            };
+$API_SPEC{'DescribeConfigurationOptions'} = { 
+  ApplicationName   => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i, optional => 1 },
+  EnvironmentName   => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{4,23}$/i,  optional => 1 },
+  Options           => { type => ARRAYREF, optional => 1 },
+  SolutionStackName => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i, optional => 1 },
+  TemplateName      => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i, optional => 1 },
+};
                           
 sub DescribeConfigurationOptions {
   ### Enter: (caller(0))[3]
@@ -507,26 +592,27 @@ Conditional: You must specify either this parameter or an EnvironmentName, but n
 
 =cut
 
-$API_SPEC{'DescribeConfigurationSettings'} = { ApplicationName => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i,
-                                                                    callbacks => {
-                                                                      'other_params' => sub { 
-                                                                        my( $me, $others ) = @_;
-                                                                        if ( !$others->{'EnvironmentName'} && !$others->{'TemplateName'} ) {
-                                                                          croak( "Provide one of EnvironmentName or TemplateName" );
-                                                                          return 0;
-                                                                        }
-  
-                                                                        if ( $others->{'EnvironmentName'} && $others->{'TemplateName'} ) {
-                                                                          croak( "Provide only one of EnvironmentName or TemplateName" );
-                                                                          return 0;
-                                                                        }
-                                                                        return 1;
-                                                                      }
-                                                                    }
-                                                                  },
-                                               EnvironmentName => { type => SCALAR, regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
-                                               TemplateName    => { type => SCALAR, regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
-                                             };
+$API_SPEC{'DescribeConfigurationSettings'} = {
+  ApplicationName => { type => SCALAR,   regex => qr/^[A-Z0-9_-]{1,100}$/i,
+                       callbacks => {
+                        'other_params' => sub { 
+                          my( $me, $others ) = @_;
+                          if ( !$others->{'EnvironmentName'} && !$others->{'TemplateName'} ) {
+                            croak( "Provide one of EnvironmentName or TemplateName" );
+                            return 0;
+                          }
+
+                          if ( $others->{'EnvironmentName'} && $others->{'TemplateName'} ) {
+                            croak( "Provide only one of EnvironmentName or TemplateName" );
+                            return 0;
+                          }
+                          return 1;
+                        }
+                      }
+                    },
+  EnvironmentName => { type => SCALAR, regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
+  TemplateName    => { type => SCALAR, regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
+};
 
 sub DescribeConfigurationSettings {
   ### Enter: (caller(0))[3]
@@ -558,7 +644,9 @@ If specified, AWS Elastic Beanstalk restricts the returned descriptions to only 
 
 =cut
 
-$API_SPEC{'DescribeEnvironmentResources'} = { ApplicationNames => { type => ARRAYREF, optional => 1 } };
+$API_SPEC{'DescribeEnvironmentResources'} = {
+  ApplicationNames => { type => ARRAYREF, optional => 1 }
+};
                           
 sub DescribeEnvironmentResources {
   ### Enter: (caller(0))[3]
@@ -613,13 +701,14 @@ If specified, AWS Elastic Beanstalk restricts the returned descriptions to inclu
 
 =cut
 
-$API_SPEC{'DescribeEnvironments'} = { ApplicationName       => { type => SCALAR,   optional => 1 },
-                                      EnvironmentId         => { type => ARRAYREF, optional => 1 },
-                                      EnvironmentNames      => { type => ARRAYREF, optional => 1 },
-                                      IncludeDeleted        => { type => BOOLEAN,  optional => 1 },
-                                      IncludedDeletedBackTo => { type => SCALAR,   optional => 1 },
-                                      VersionLabel          => { type => SCALAR,   optional => 1 },
-                                   };
+$API_SPEC{'DescribeEnvironments'} = { 
+  ApplicationName       => { type => SCALAR,   optional => 1 },
+  EnvironmentId         => { type => ARRAYREF, optional => 1 },
+  EnvironmentNames      => { type => ARRAYREF, optional => 1 },
+  IncludeDeleted        => { type => BOOLEAN,  optional => 1 },
+  IncludedDeletedBackTo => { type => SCALAR,   optional => 1 },
+  VersionLabel          => { type => SCALAR,   optional => 1 },
+};
                           
 sub DescribeEnvironments {
   ### Enter: (caller(0))[3]
@@ -651,7 +740,9 @@ If specified, AWS Elastic Beanstalk restricts the returned descriptions to only 
 
 =cut
 
-$API_SPEC{'DescribeEvents'} = { ApplicationNames => { type => ARRAYREF, optional => 1 } };
+$API_SPEC{'DescribeEvents'} = {
+  ApplicationNames => { type => ARRAYREF, optional => 1 }
+};
                           
 sub DescribeEvents {
   ### Enter: (caller(0))[3]
@@ -691,8 +782,28 @@ sub ListAvailableSolutionStacks {
 }
 
 # RebuildEnvironment
+
+=head2 RebuildEnvironment( )
+
+   Unimplimented (for now)
+
+=cut
+
 # RequestEnvironmentInfo
+
+=head2 RequestEnvironmentInfo( )
+
+   Unimplimented (for now)
+
+=cut
+
 # RestartAppServer
+
+=head2 RestartAppServer( )
+
+   Unimplimented (for now)
+
+=cut
 
 # #################################################################################################
 # RetrieveEnvironmentInfo
@@ -745,21 +856,22 @@ Required: Yes
 
 =cut
 
-$API_SPEC{'RetrieveEnvironmentInfo'} = { InfoType => { type => SCALAR, optional => 1, default => 'tail',
-                                                       callbacks => {
-                                                          'other_params' => sub { 
-                                                            my( $me, $others ) = @_;
-                                                            if ( !$others->{'EnvironmentId'} && !$others->{'EnvironmentName'} ) {
-                                                              croak( "Provide one of EnvironmentId or EnvironmentName" );
-                                                              return 0;
-                                                            }
-                                                            return 1;
-                                                          }
-                                                        }
-                                                      },
-                                          EnvironmentId   => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
-                                          EnvironmentName => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
-                                       };
+$API_SPEC{'RetrieveEnvironmentInfo'} = {
+  InfoType => { type => SCALAR, optional => 1, default => 'tail',
+                callbacks => {
+                  'other_params' => sub { 
+                    my( $me, $others ) = @_;
+                    if ( !$others->{'EnvironmentId'} && !$others->{'EnvironmentName'} ) {
+                      croak( "Provide one of EnvironmentId or EnvironmentName" );
+                      return 0;
+                    }
+                    return 1;
+                  }
+                }
+              },
+  EnvironmentId   => { type => SCALAR, regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
+  EnvironmentName => { type => SCALAR, regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
+};
 
 sub RetrieveEnvironmentInfo {
   ### Enter: (caller(0))[3]
@@ -771,20 +883,56 @@ sub RetrieveEnvironmentInfo {
 # #################################################################################################
 # SwapEnvironmentCNAMEs
 
+=head2 SwapEnvironmentCNAMEs( )
+
+   Unimplimented (for now)
+
+=cut
+
 # #################################################################################################
 # TerminateEnvironment
+
+=head2 TerminateEnvironment( )
+
+   Unimplimented (for now)
+
+=cut
 
 # #################################################################################################
 # UpdateApplication
 
+=head2 UpdateApplication( )
+
+   Unimplimented (for now)
+
+=cut
+
 # #################################################################################################
 # UpdateApplicationVersion
+
+=head2 UpdateApplicationVersion( )
+
+   Unimplimented (for now)
+
+=cut
 
 # #################################################################################################
 # UpdateConfigurationTemplate
 
+=head2 UpdateConfigurationTemplate( )
+
+   Unimplimented (for now)
+
+=cut
+
 # #################################################################################################
 # UpdateEnvironment
+
+=head2 UpdateEnvironment( )
+
+   Unimplimented (for now)
+
+=cut
 
 # #################################################################################################
 # ValidateConfigurationSettings
@@ -827,27 +975,28 @@ Condition: You cannot specify both this and an environment name.
 
 =cut
 
-$API_SPEC{'ValidateConfigurationSettings'} = { ApplicationName => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{1,100}$/i,
-                                                                    callbacks => {
-                                                                      'other_params' => sub { 
-                                                                        my( $me, $others ) = @_;
-                                                                        if ( !$others->{'EnvironmentName'} && !$others->{'TemplateName'} ) {
-                                                                          croak( "Provide one of EnvironmentName or TemplateName" );
-                                                                          return 0;
-                                                                        }
+$API_SPEC{'ValidateConfigurationSettings'} = {
+  ApplicationName => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{1,100}$/i,
+                      callbacks => {
+                        'other_params' => sub { 
+                          my( $me, $others ) = @_;
+                          if ( !$others->{'EnvironmentName'} && !$others->{'TemplateName'} ) {
+                            croak( "Provide one of EnvironmentName or TemplateName" );
+                            return 0;
+                          }
 
-                                                                        if ( $others->{'EnvironmentName'} && $others->{'TemplateName'} ) {
-                                                                          croak( "Provide only one of EnvironmentName or TemplateName" );
-                                                                          return 0;
-                                                                        }
-                                                                        return 1;
-                                                                      }
-                                                                    }
-                                                                  },
-                                               EnvironmentName => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
-                                               OptionSettings  => { type => ARRAYREF },
-                                               TemplateName    => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
-                                             };
+                          if ( $others->{'EnvironmentName'} && $others->{'TemplateName'} ) {
+                            croak( "Provide only one of EnvironmentName or TemplateName" );
+                            return 0;
+                          }
+                          return 1;
+                        }
+                      }
+                    },
+  EnvironmentName => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
+  OptionSettings  => { type => ARRAYREF },
+  TemplateName    => { type => SCALAR,  regex => qr/^[A-Z0-9_-]{4,23}$/i, optional => 1 },
+};
 
 sub ValidateConfigurationSettings {
   ### Enter: (caller(0))[3]
@@ -855,6 +1004,8 @@ sub ValidateConfigurationSettings {
   ### Exit: (caller(0))[3]
   return $rez;
 }
+
+# #################################################################################################
 
 =head1 AUTHOR
 

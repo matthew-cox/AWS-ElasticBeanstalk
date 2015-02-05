@@ -3,7 +3,7 @@ NAME
     ElasticBeanstalk
 
 VERSION
-    Version 0.0.6
+    Version 0.0.7
 
 SYNOPSIS
     This module provides a Perl wrapper around Amazon's (
@@ -20,9 +20,9 @@ INTERFACE
     must provide the Amazon required arguments of id, and secret in the
     param hash:
 
-     my $ebn = WebService::Amazon::ElasticBeanstalk->new( param => { id     => $AWS_ACCESS_KEY_ID,
-                                                                     region => 'us-east-1',
-                                                                     secret => $AWS_ACCESS_KEY_SECRET } );
+       my $ebn = WebService::Amazon::ElasticBeanstalk->new( param => { id     => $AWS_ACCESS_KEY_ID,
+                                                                       region => 'us-east-1',
+                                                                       secret => $AWS_ACCESS_KEY_SECRET } );
 
     Parameters
     id (required)
@@ -52,6 +52,33 @@ INTERFACE
         The prefix used when this CNAME is reserved.
 
     Returns: result from API call
+
+  CreateApplication( )
+       Unimplimented (for now)
+
+  CreateApplicationVersion( )
+       Unimplimented (for now)
+
+  CreateConfigurationTemplate( )
+       Unimplimented (for now)
+
+  CreateEnvironment( )
+       Unimplimented (for now)
+
+  CreateStorageLocation( )
+       Unimplimented (for now)
+
+  DeleteApplication( )
+       Unimplimented (for now)
+
+  DeleteApplicationVersion( )
+       Unimplimented (for now)
+
+  DeleteConfigurationTemplate( )
+       Unimplimented (for now)
+
+  DeleteEnvironmentConfiguration( )
+       Unimplimented (for now)
 
   DescribeApplicationVersions( )
     Returns a list of the available solution stack names.
@@ -228,6 +255,15 @@ INTERFACE
 
     Returns: result from API call
 
+  RebuildEnvironment( )
+       Unimplimented (for now)
+
+  RequestEnvironmentInfo( )
+       Unimplimented (for now)
+
+  RestartAppServer( )
+       Unimplimented (for now)
+
   RetrieveEnvironmentInfo( )
     Retrieves the compiled information from a RequestEnvironmentInfo
     request.
@@ -273,6 +309,24 @@ INTERFACE
         Required: Yes
 
     Returns: result from API call
+
+  SwapEnvironmentCNAMEs( )
+       Unimplimented (for now)
+
+  TerminateEnvironment( )
+       Unimplimented (for now)
+
+  UpdateApplication( )
+       Unimplimented (for now)
+
+  UpdateApplicationVersion( )
+       Unimplimented (for now)
+
+  UpdateConfigurationTemplate( )
+       Unimplimented (for now)
+
+  UpdateEnvironment( )
+       Unimplimented (for now)
 
   ValidateConfigurationSettings( )
     Takes a set of configuration settings and either a configuration
