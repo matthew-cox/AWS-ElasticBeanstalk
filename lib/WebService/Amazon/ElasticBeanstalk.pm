@@ -26,12 +26,12 @@ WebService::Amazon::ElasticBeanstalk - Basic interface to Amazon ElasticBeanstal
 
 =head1 VERSION
 
-Version 0.0.7
+Version 0.0.8
 
 =cut
 
 use version;
-our $VERSION = version->declare("v0.0.7");
+our $VERSION = version->declare("v0.0.8");
 
 =head1 SYNOPSIS
 

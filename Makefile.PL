@@ -13,6 +13,6 @@ requires 'Params::Validate';
 requires 'Readonly';
 requires 'version';
 requires 'WebService::Simple';
-requires 'Xml::Simple';
+requires 'XML::Simple';
 
 WriteAll();
